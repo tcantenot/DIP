@@ -1,0 +1,88 @@
+
+% --------------------------------------------------------------- CONFIGURATIONS
+
+%ifdef TWOSIDE
+	%\documentclass[a4paper,12pt,final,twoside,openright]{book}
+%elif ONESIDE
+	\documentclass[a4paper,12pt,final,oneside]{book}
+%endif
+
+\usepackage{rapport}
+
+
+
+% -------------------------------------------------------------- META: CONSTANTS
+
+\newcommand{\reporttitle}{Digital Image Processing}
+\newcommand{\reportauthor}{Thierry~\textsc{Cantenot}}
+\newcommand{\reportsubject}{Report}
+\newcommand{\topic}{Problem 1: Histogram Equalization}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\setlength{\parskip}{1ex} % Espace entre les paragraphes
+
+\hypersetup{
+	pdftitle={\reporttitle},%
+    pdfauthor={\reportauthor},%
+    pdfsubject={\reportsubject},%
+}
+
+\title{\reporttitle}
+\author{\reportauthor}
+%\setcounter{tocdepth}{4}
+
+
+% ------------------------------------------------------------------------- FILE
+
+\begin{document}
+
+
+    % ------------------------------------------------------------------- HEADER
+
+	\renewcommand{\chaptername}{} %\renewcommand{\thechapter}{}
+	\renewcommand{\contentsname}{Summary}
+
+	\pagestyle{empty}
+	\pagenumbering{Roman}
+
+
+    % ------------------------------------------------------------ HEADER: TITLE
+
+	\include{title}
+
+	%ifdef TWOSIDE
+		%\cleardoublepage
+	%endif
+
+	%\include{title2}
+
+	%ifdef TWOSIDE
+		%  \newpage
+		%	\null
+		%	\vfill
+	%endif
+
+
+    % --------------------------------------------------- HEADER: CONFIGURATIONS
+
+	\sloppy          % Justification moins stricte : des mots ne dépasseront pas des paragraphes
+
+    \frontmatter
+		\pagestyle{empty}
+		\tableofcontents
+		\addtocontents{toc}{\protect\thispagestyle{empty}}
+
+	\mainmatter
+	\pagestyle{headings}
+
+	\renewcommand{\thechapter}{\Alph{chapter}}
+	\renewcommand{\chaptermark}[1]{\markboth{\MakeUppercase{\chaptername\ \thechapter.\ #1}}{}}
+	\renewcommand{\sectionmark}[1]{\markright{\thesection{} #1}}
+
+
+    % ------------------------------------------------------------------ CONTENT
+
+    \include{content}
+
+
+    % ------------------------------------------------------------------- FOOTER
+\end{document}
