@@ -66,7 +66,7 @@ def show_histogram(hist, title=None):
     cumul_hist_plot.spines['right'].set_color(cumul_hist_color)
     cumul_hist_plot.tick_params(axis='y', colors=cumul_hist_color)
 
-    pyplot.show()
+    pyplot.draw()
 
 
 def histogram_equalization(image, hist):
@@ -112,13 +112,13 @@ if __name__ == "__main__":
         perform histogram equalization'
     )
 
-    parser.add_argument('path', type=str, help='Image path')
+    parser.add_argument('image_path', type=str, help='Image path')
 
     # Parse args
     args = parser.parse_args()
 
     # Image path
-    image_path = args.path
+    image_path = args.image_path
 
     # Check that the image exists
     if not os.path.isfile(image_path):
@@ -146,3 +146,6 @@ if __name__ == "__main__":
     new_hist = histogram(new_image)
     new_image.show()
     show_histogram(new_hist, "Histogram of enhanced '{}'".format(image_path))
+
+    # Ensure that the matplotlib windows stay open
+    pyplot.show()
