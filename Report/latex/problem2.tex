@@ -1,18 +1,96 @@
-\chapter{Combining spatial enhancement methods}
+\chapter{Spatial enhancement methods}
 
 \section{Problem statement}
 
 Implement the image enhancement task of Section 3.7 (Fig 3.43) (Section 3.8, Fig 3.46 in our slides).\\
 The image to be enhanced is \textit{skeleton\_orig.tif}.\\
 You should implement all steps in Figure 3.43. \\
-(You cannot directly use functions of Matlab such as imfilter or fspecial,
-implement all functions by yourself).
 
-\section{Python program}
+\section{Python implementation}
 
-Usage:~\textbf{python problem2.py [-h] [--laplacian] [--sobel] [-a A] image\_path}
+Usage:~\textbf{python problem2.py [-h] [--laplacian] [--sobel] [-a A] image\_path} \\
 
-For example, to use and display the results of applying a 3x3 laplacian filter with A = 1.7, type:
-\textbf{python problem2.py --laplacian -a 1.7 skeleton_orig.tif}
+For example, to use a 3x3 Laplacian filter with A = 1.7, and then a Sobel, type:~\\
+\textbf{python problem2.py --laplacian -a 1.7 --sobel skeleton\_orig.tif}
 
-\section{Figure 2}
+%The original image, its Laplacian, its sharpened (Laplacian) and its Sobel will be displayed.
+
+\section{Results}
+
+    \subsection{Original image}
+
+    Original image:~\ref{diagram:skeleton}
+
+    \begin{figure}[!htb]\centering
+        \includegraphics[width=0.7\linewidth]{./images/2/skeleton.jpg}
+        \caption{Original \textit{skeleton\_orig.tif}}
+        \label{diagram:skeleton}
+    \end{figure}
+
+
+    \subsection{3x3 Laplacian (A = 0)}
+
+    Original image's laplacian:~\ref{diagram:laplacian_0} |
+    Original image's sharpened laplacian:~\ref{diagram:laplacian_0_sharpened}
+
+    \begin{figure}[!htb]\centering
+        \includegraphics[width=0.4\linewidth]{./images/2/laplacian_A0.jpg}
+        \caption{Laplacian (A=0)}\label{diagram:laplacian_0}
+    \end{figure}
+
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/laplacian_A0_sharpened.jpg}}
+            \caption{Sharpened image}\label{diagram:laplacian_0_sharpened}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/skeleton.jpg}}
+        \caption{Original image}
+        \end{minipage}
+    \end{figure}
+
+
+    \subsection{3x3 Laplacian (A = 1)}
+
+    Original image's laplacian:~\ref{diagram:laplacian_1} |
+    Original image's sharpened laplacian:~\ref{diagram:laplacian_1_sharpened}
+
+    \begin{figure}[!htb]\centering
+        \includegraphics[width=0.4\linewidth]{./images/2/laplacian_A1.jpg}
+        \caption{Laplacian (A=1)}\label{diagram:laplacian_1}
+    \end{figure}
+
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/laplacian_A1_sharpened.jpg}}
+            \caption{Sharpened image}\label{diagram:laplacian_1_sharpened}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/skeleton.jpg}}
+        \caption{Original image}
+        \end{minipage}
+    \end{figure}
+
+
+    \subsection{3x3 Laplacian (A = 1.7)}
+
+    Original image's laplacian:~\ref{diagram:laplacian_1_7} |
+    Original image's sharpened laplacian:~\ref{diagram:laplacian_1_7_sharpened}
+
+    \begin{figure}[!htb]\centering
+        \includegraphics[width=0.4\linewidth]{./images/2/laplacian_A1-7.jpg}
+        \caption{Laplacian (A=1.7)}\label{diagram:laplacian_1_7}
+    \end{figure}
+
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/laplacian_A1-7_sharpened.jpg}}
+            \caption{Sharpened image}\label{diagram:laplacian_1_7_sharpened}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/skeleton.jpg}}
+        \caption{Original image}
+        \end{minipage}
+    \end{figure}
+
+
