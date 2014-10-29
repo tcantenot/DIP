@@ -1,7 +1,7 @@
 # Following line HAS TO be the first one.
 THIS := $(lastword $(MAKEFILE_LIST))
 
-TEX_NAME=Problem1
+TEX_NAME=report
 
 TEX_BUILD_FLAGS= -interaction=nonstopmode -file-line-error
 

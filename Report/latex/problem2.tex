@@ -1,0 +1,18 @@
+\chapter{Combining spatial enhancement methods}
+
+\section{Problem statement}
+
+Implement the image enhancement task of Section 3.7 (Fig 3.43) (Section 3.8, Fig 3.46 in our slides).\\
+The image to be enhanced is \textit{skeleton\_orig.tif}.\\
+You should implement all steps in Figure 3.43. \\
+(You cannot directly use functions of Matlab such as imfilter or fspecial,
+implement all functions by yourself).
+
+\section{Python program}
+
+Usage:~\textbf{python problem2.py [-h] [--laplacian] [--sobel] [-a A] image\_path}
+
+For example, to use and display the results of applying a 3x3 laplacian filter with A = 1.7, type:
+\textbf{python problem2.py --laplacian -a 1.7 skeleton_orig.tif}
+
+\section{Figure 2}
