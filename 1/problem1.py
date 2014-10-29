@@ -131,6 +131,9 @@ if __name__ == "__main__":
         print "Failed to open image '{}'".format(image_path)
         sys.exit(-2)
 
+    # Make sure the image is a gray scale image
+    image = image.convert("L")
+
     # Compute the histogram of the image
     print "Computing histogram of '{}'...".format(image_path)
     hist = histogram(image)

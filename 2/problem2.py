@@ -143,7 +143,6 @@ if __name__ == "__main__":
 
     parser.add_argument('image_path', type=str, help='Image path')
 
-    #mask_types = parser.add_mutually_exclusive_group(required=True)
     mask_types = parser.add_argument_group('Mask types', 'Type of the mask to apply')
     mask_types.add_argument('--laplacian', action='store_true', help='Use a 3x3 Laplacian filter \
         (the value of A can be specified with \'-a\')'
