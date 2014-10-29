@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse, os, sys
+from math import sqrt
 from PIL import Image
 
 
@@ -24,23 +25,12 @@ def laplacian_3x3_mask_b(A=0):
 
 # Sobel 3x3 mask X-axis
 def sobel_3x3_mask_xaxis():
-    return [[-1, 0, +1], [-2,  0, +2], [-1, 0, +1]]
+    return [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
 
 # Sobel 3x3 mask Y-axis
 def sobel_3x3_mask_yaxis():
-    return [[+1, +2, +1], [0,  0, 0], [-1, -2, -1]]
+    return [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
 
-# Transpose a 3x3 mask
-def transpose_mask(mask):
-    tr = mask
-    tr[0][1] = mask[1][0]
-    tr[0][2] = mask[2][0]
-    tr[1][0] = mask[0][1]
-    tr[1][2] = mask[2][1]
-    tr[2][0] = mask[0][2]
-    tr[2][1] = mask[1][2]
-
-    return tr
 
 # Create and return a image of size (w, h) creted from a linear array of pixels
 def new_image(pixels, w, h):
@@ -50,7 +40,6 @@ def new_image(pixels, w, h):
         for y in xrange(h):
             data[x, y] = pixels[y*w+x]
     return image
-
 
 # Scale the filtered pixels data to the range [0, 255]
 def scale_filtered_data(pixels, w, h):
@@ -123,13 +112,13 @@ def apply_mask(image, mask):
                 data[y*w+x] = v
 
                 # Clamp the pixel value to the range [0, 255]
-                #new_pixels[x, y] = max(0, min(255, v))
+                new_pixels[x, y] = max(0, min(255, v))
 
     return new_image, data
 
 
+# Apply a mask to the image, then scale the filtered data and sharpen it
 def process_image(image, mask):
-
     w, h = image.size
 
     filtered_image, filtered_data = apply_mask(image, mask)
@@ -189,20 +178,22 @@ if __name__ == "__main__":
     image = image.convert("L")
     image.show()
 
+    # Apply a 3x3 Laplacian mask on the image
     if args.laplacian:
-        # Apply a laplacian B 3x3 mask on the image
         print "Applying laplacian B 3x3 mask (A = {}) on '{}'...".format(A, image_path)
         process_image(image, laplacian_3x3_mask_b(A))
 
+    # Apply a 3x3 Sobel mask on the image
     if args.sobel:
-        sobel_img = image
-
-        # Apply a Sobel X-axis 3x3 mask on the image
         print "Applying Sobel X-axis 3x3 mask on '{}'...".format(image_path)
-        sobel_img, data = apply_mask(sobel_img, transpose_mask(sobel_3x3_mask_xaxis()))
-        sobel_img.show()
+        sobel_img, data_x = apply_mask(image, sobel_3x3_mask_xaxis())
+        #sobel_img.show()
 
-        # Apply a Sobel Y-axis 3x3 mask on the image
         print "Applying Sobel Y-axis 3x3 mask on '{}'...".format(image_path)
-        sobel_img, data = apply_mask(sobel_img, sobel_3x3_mask_yaxis())
+        sobel_img, data_y = apply_mask(image, sobel_3x3_mask_yaxis())
+        #sobel_img.show()
+
+        print "Adding the two Sobel passes..."
+        sobel_data = [sqrt(x**2 + y**2) for (x, y) in zip(data_x, data_y)]
+        sobel_img = new_image(sobel_data, image.size[0], image.size[1])
         sobel_img.show()
