@@ -10,13 +10,14 @@ imfilter or fspecial, implement all functions by yourself).
 
 \section{Python implementation}
 
-Usage:~\textbf{python problem2.py [-h] [--laplacian] [--sobel] [-a A] image\_path} \\
+Usage:~\textbf{python problem2.py [-h] [--laplacian] [--sobel] [-a A] [-g G] [-c C] image\_path}
 
-For example, to use a 3x3 Laplacian filter with A = 1.7, and then a Sobel, type:~\\
+For example, to run the full image enhancement described in the assignment, using a 3$\times$3 Laplacian filter with A = 1.7,
+then a Sobel, a smoothing filter and a Power-Law transformation with c = 1 and gamma = 0.5 type:~\\
 
-\textbf{python problem2.py --laplacian -a 1.7 --sobel skeleton\_orig.tif} \\
+\textbf{python problem2.py --laplacian -a 1.7 --sobel -g 0.5 -c 1 skeleton\_orig.tif} \\
 
-The original image, its Laplacian, its sharpened (Laplacian) and its Sobel will be displayed.
+
 
 \pagebreak
 \section{Results}
@@ -112,5 +113,44 @@ The original image, its Laplacian, its sharpened (Laplacian) and its Sobel will 
         \begin{minipage}{0.40\textwidth}
         \frame{\includegraphics[width=\linewidth]{./images/2/skeleton.jpg}}
         \caption{Original image}
+        \end{minipage}
+    \end{figure}
+
+    \pagebreak
+    \subsection{Smoothing, Sharpening and Power-Law transformation}
+
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/smooth_sobel.jpg}}
+            \caption{Smooth Sobel}\label{diagram:smooth_sobel}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/laplacian_x_smooth_sobel.jpg}}
+        \caption{Laplacian x Sobel}\label{diagram:laplacian_x_smooth_sobel}
+        \end{minipage}
+    \end{figure}
+
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/original_+_laplacian_sobel.jpg}}
+            \caption{Original + Laplacian x Smooth Sobel}\label{diagram:original_laplacian_sobel}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/final_image.jpg}}
+        \caption{Final image (after Power-Law (c=1, g=0.5))}\label{diagram:final_image}
+        \end{minipage}
+    \end{figure}
+
+
+    \pagebreak
+    \subsection{Comparison}
+    \begin{figure}[!htb]\centering
+        \begin{minipage}{0.40\textwidth}
+            \frame{\includegraphics[width=\linewidth]{./images/2/skeleton.jpg}}
+            \caption{Original}
+        \end{minipage}
+        \begin{minipage}{0.40\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/2/final_image.jpg}}
+        \caption{Final image}
         \end{minipage}
     \end{figure}

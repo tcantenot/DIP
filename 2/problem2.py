@@ -31,6 +31,11 @@ def sobel_3x3_mask_xaxis():
 def sobel_3x3_mask_yaxis():
     return [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
 
+# 5x5 Smoothing mask
+def smoothing_5x5_mask():
+    r = float(1) / 25
+    return [[r, r, r, r, r]] * 5
+
 
 # Create and return a image of size (w, h) creted from a linear array of pixels
 def new_image(pixels, w, h):
@@ -49,7 +54,11 @@ def scale_filtered_data(pixels, w, h):
         for y in xrange(h):
             pixels[y*w+x] -= min_value
 
+    print "Min value: {}".format(min_value)
+
     max_value = max(pixels)
+
+    print "Max value: {}".format(max_value)
     for x in xrange(w):
         for y in xrange(h):
             pixels[y*w+x] = pixels[y*w+x] * (float(255) / max_value)
@@ -77,6 +86,41 @@ def sharpen_image(image, filtered_data):
         sharpened[i] = sharpened[i] * (float(255) / max_sharpened)
 
     return sharpened
+
+# Multiply two images
+def multiply_images(img1, img2):
+    w, h = img1.size
+    pixels1 = img1.getdata()
+    pixels2 = img2.getdata()
+
+    data = [0] * w * h
+
+    for x in xrange(w):
+        for y in xrange(h):
+            idx = y * w + x
+            data[idx] = pixels1[idx] * pixels2[idx]
+
+    # Scale the data
+    data = scale_filtered_data(data, w, h)
+
+    return new_image(data, w, h)
+
+# Apply Power-Law transformation
+def apply_power_law(image, gamma, c = float(1)):
+    w, h = image.size
+    pixels = image.getdata()
+
+    data = [0] * w * h
+
+    for x in xrange(w):
+        for y in xrange(h):
+            idx = y * w + x
+            data[idx] = c * pixels[idx]**gamma
+
+    # Scale the data
+    data = scale_filtered_data(data, w, h)
+
+    return new_image(data, w, h)
 
 
 # Apply a mask on an image and return the resulting image
@@ -132,6 +176,8 @@ def process_image(image, mask):
     sharpened_image = new_image(sharpened, w, h)
     sharpened_image.show()
 
+    return sharpened_image
+
 
 # Main
 if __name__ == "__main__":
@@ -153,6 +199,14 @@ if __name__ == "__main__":
         help='"A" parameter of Laplacian mask'
     )
 
+    parser.add_argument('-g', dest='g', type=float, default=0.5,
+        help='"Gamma" parameter of Power-Law transformation'
+    )
+
+    parser.add_argument('-c', dest='c', type=float, default=1.0,
+        help='"c" parameter of Power-Law transformation'
+    )
+
     # Parse args
     args = parser.parse_args()
 
@@ -161,6 +215,12 @@ if __name__ == "__main__":
 
     # Mask parameters
     A = args.a
+
+    # Gamma parameter of the Power-Law transformation
+    gamma = args.g
+
+    # C parameter of the Power-Law transformation
+    c = args.c
 
     # Check that the image exists
     if not os.path.isfile(image_path):
@@ -176,14 +236,15 @@ if __name__ == "__main__":
     # Make sure the image is a gray scale image
     image = image.convert("L")
     image.show()
+    w, h = image.size
 
     # Apply a 3x3 Laplacian mask on the image
-    if args.laplacian:
+    if args.laplacian and not args.sobel:
         print "Applying laplacian B 3x3 mask (A = {}) on '{}'...".format(A, image_path)
         process_image(image, laplacian_3x3_mask_b(A))
 
     # Apply a 3x3 Sobel mask on the image
-    if args.sobel:
+    if args.sobel and not args.laplacian:
         print "Applying Sobel X-axis 3x3 mask on '{}'...".format(image_path)
         sobel_img, data_x = apply_mask(image, sobel_3x3_mask_xaxis())
         #sobel_img.show()
@@ -196,3 +257,42 @@ if __name__ == "__main__":
         sobel_data = [sqrt(x**2 + y**2) for (x, y) in zip(data_x, data_y)]
         sobel_img = new_image(sobel_data, image.size[0], image.size[1])
         sobel_img.show()
+
+        print "Smoothing Sobel..."
+        sobel_img, data = apply_mask(sobel_img, smoothing_5x5_mask())
+        sobel_img.show()
+
+    if args.sobel and args.laplacian:
+        print "Applying laplacian B 3x3 mask (A = {}) on '{}'...".format(A, image_path)
+        sharpened_img = process_image(image, laplacian_3x3_mask_b(A))
+
+        print "Applying Sobel X-axis 3x3 mask on '{}'...".format(image_path)
+        sobel_img, data_x = apply_mask(image, sobel_3x3_mask_xaxis())
+        #sobel_img.show()
+
+        print "Applying Sobel Y-axis 3x3 mask on '{}'...".format(image_path)
+        sobel_img, data_y = apply_mask(image, sobel_3x3_mask_yaxis())
+        #sobel_img.show()
+
+        print "Adding the two Sobel passes..."
+        sobel_data = [sqrt(x**2 + y**2) for (x, y) in zip(data_x, data_y)]
+        sobel_img = new_image(sobel_data, image.size[0], image.size[1])
+        sobel_img.show()
+
+        print "Smoothing Sobel..."
+        smooth_sobel_img, data = apply_mask(sobel_img, smoothing_5x5_mask())
+        smooth_sobel_img.show()
+
+        print "Multiply Laplacian with smooth Sobel..."
+        multiplied_img = multiply_images(sharpened_img, sobel_img)
+        multiplied_img.show()
+
+        print "Adding to original image..."
+        image_data = image.getdata()
+        mul_img_data = multiplied_img.getdata()
+        enhanced_img = new_image([(x + y) for (x, y) in zip(image_data, mul_img_data)], w, h)
+        enhanced_img.show()
+
+        print "Applying Power-Law transformation..."
+        final_img = apply_power_law(enhanced_img, gamma, c)
+        final_img.show()
