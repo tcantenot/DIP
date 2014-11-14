@@ -124,31 +124,35 @@ if __name__ == "__main__":
     image.show()
 
     if args.histogram:
-        fig = pyplot.figure()
+        fig, plot = pyplot.subplots()
+        plot.set_xlim(0, 255)
         fig.suptitle("Histogram of orginal image")
         pyplot.plot(image.histogram())
         pyplot.show()
 
 
-    noise_image = None
-
     # Noise generators
+
+    noise_image = None
 
     if args.gaussian:
         noise_image = apply_noise(image, GaussianNoise(0, 20))
     elif args.uniform:
-        noise_image = apply_noise(image, UniformNoise())
+        noise_image = apply_noise(image, UniformNoise(0, 128))
 
     noise_image.show()
 
-    if args.histogram:
-        fig = pyplot.figure()
+    if args.histogram and noise_image:
+        fig, plot = pyplot.subplots()
+        plot.set_xlim(0, 255)
         fig.suptitle("Histogram of original image with noise")
         pyplot.plot(noise_image.histogram())
         pyplot.show()
 
 
     # Mean filters
+
+    restored_image = None
 
     if args.arithmetic:
         restored_image = apply_restoration_filter(noise_image, ArithmeticMeanFilter(3,3))
@@ -189,8 +193,9 @@ if __name__ == "__main__":
         restored_image = apply_restoration_filter(noise_image, AlphaTrimmedFilter(3,3,args.d))
         restored_image.show()
 
-    if args.histogram:
-        fig = pyplot.figure()
+    if args.histogram and restored_image:
+        fig, plot = pyplot.subplots()
+        plot.set_xlim(0, 255)
         fig.suptitle("Histogram of restored image")
         pyplot.plot(restored_image.histogram())
         pyplot.show()

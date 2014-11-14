@@ -127,8 +127,8 @@ class ContraHarmonicMeanFilter(object):
                 img_x = (x - self.width / 2 + i)
                 img_y = (y - self.height / 2 + j)
                 pixel = get_pixel(img_x, img_y)
-                a += pixel**(self.Q+1)
-                b += pixel**(self.Q)
+                a += pixel**(self.Q+1) if pixel != 0 else 0
+                b += pixel**(self.Q) if pixel != 0 else 0
 
         value = a / b
 
