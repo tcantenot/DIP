@@ -1,5 +1,6 @@
-import numpy as np
+### Noise generators ###
 
+import numpy as np
 
 # Gaussian noise generator
 class GaussianNoise(object):
