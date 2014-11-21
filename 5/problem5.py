@@ -7,39 +7,47 @@ import cmath
 from PIL import Image
 import numpy as np
 
-# Blurring function
-def blurring(a, b, T):
-    def _blurring(u, v):
-        if u == 0 and v == 0 or \
-           a == 0 and b == 0 or \
-           a == 0 and v == 0 or \
-           b == 0 and u == 0:
-            return 1
-        else:
-            u, v = float(u), float(v)
-            return float(T) / (cmath.pi * (u*a + v*b)) * cmath.sin(cmath.pi * (u*a + v*b)) \
-                    * cmath.exp(-1j*cmath.pi*(u*a+v*b))
-
-    return _blurring
+from scipy import misc
 
 
-# Apply the filter to the given FFT data
-def apply_filter(fft, filter):
-    return np.asarray([x * filter(i[0], i[1]) for i, x in np.ndenumerate(fft)]).reshape(fft.shape)
+def blurring_filter(a, b, T, shape):
+    m, n = shape
+    u, v = np.ogrid[0.:m, 0.:n]
+    u[0, 0], v[0, 0] = 0.00001, 0.00001
+    return T/(np.pi*(u*a+v*b)) * np.sin(np.pi*(u*a+v*b)) * np.exp(-1j*np.pi*(u*a+v*b))
+
+def inv_blurring_filter(a, b, T, shape):
+    return 1./blurring_filter(a, b, T, shape)
+
+def wiener_filter(H):
+    K = 0.1
+    return H.T / ((H * H) + K)
+
+
+# Gaussian noise
+def gaussian_noise(mu, sigma, shape):
+    return np.random.normal(mu, sigma, shape)
 
 # Preprocessing
-def preprocess(data, w, h):
-    new_data = [0] * w * h
-    for x in xrange(w):
-        for y in xrange(h):
-            idx = y * w + x
-            new_data[idx] = data[idx] * ((-1)**(x+y))
-    return new_data
+def preprocess(data):
+    x, y = np.ogrid[0:data.shape[0], 0:data.shape[1]]
+    return data * ((-1)**(x+y))
 
 # Postprocessing
-def postprocess(data, w, h):
-    return preprocess(data, w, h)
+def postprocess(data):
+    return preprocess(data)
 
+# Scale the data between 0 and 255
+def scale_data(data):
+    min_value = np.min(data)
+    scaled_data = data - np.full(data.shape, min_value)
+    max_value = np.max(scaled_data)
+    scaled_data = scaled_data * np.full(data.shape, 255./max_value)
+    return scaled_data
+
+
+def extract_real(img):
+    return np.array([x.real for _, x in np.ndenumerate(img)]).reshape(M, N)
 
 # Create and return a new image of size (w, h) from the given linear array of pixels
 def new_image(pixels, w, h):
@@ -50,22 +58,43 @@ def new_image(pixels, w, h):
             data[x, y] = pixels[y*w+x]
     return image
 
-def scale_filtered_data(pixels, w, h):
 
-    min_value = min(pixels)
-    for x in xrange(w):
-        for y in xrange(h):
-            pixels[y*w+x] -= min_value
+def show(img_data):
+    w, h = img_data.shape
+    new_image(img_data.ravel(), w, h).show()
 
-    max_value = max(pixels)
-
-    for x in xrange(w):
-        for y in xrange(h):
-            pixels[y*w+x] = pixels[y*w+x] * (float(255) / max_value)
-
-    return pixels
+def show_fourier(fft_data):
+    fft_img = fft_data.ravel()
+    fft_img[0] = 0
+    new_image(fft_img, M, N).show()
 
 
+def process_image(img, filter, pp=True, scale=True, imshow_f=False):
+
+    # Preprocess the data: multiply by (-1)^(x+y)
+    if pp: img = preprocess(img)
+
+    # 2D Fast Fourier Transform
+    fft_data = np.fft.fft2(img)
+    if imshow_f: show_fourier(fft_data)
+
+    # Apply the filter
+    filtered_data = fft_data * filter
+    if imshow_f: show_fourier(filtered_data)
+
+    # 2D Inverse Fast Fourier Transform
+    filtered_img = np.fft.ifft2(filtered_data)
+
+    # Retrieve the real part of the IFFT
+    real_img = extract_real(filtered_img)
+
+    # Postprocess the data: multiply by (-1)^(x+y)
+    if pp: real_img = postprocess(real_img)
+
+    # Scale the pixels values
+    if scale: real_img = scale_data(real_img)
+
+    return real_img
 
 # Main
 if __name__ == "__main__":
@@ -82,6 +111,8 @@ if __name__ == "__main__":
 
     # Image path
     image_path = args.image_path
+
+    a, b, T = 0.1, 0.1, 1
 
     # Check that the image exists
     if not os.path.isfile(image_path):
@@ -100,43 +131,42 @@ if __name__ == "__main__":
 
     M, N = image.size
 
-    # Select filter
-    filter = None
-    filter = blurring(a=0.005, b=0.005, T=1)
-
     # Image's pixels
-    data = image.getdata()
+    data = np.array(image.getdata()).reshape((M, N))
 
-    # Preprocess the data: multiply by (-1)^(x+y)
-    #data = preprocess(data, M, N)
+    # Blurring filter
+    bf = blurring_filter(a, b, T, data.shape)
 
-    # 2D Fast Fourier Transform
-    fft = np.fft.fft2(np.asarray(data).reshape((M, N)))
+    # Apply the blurring filter
+    blurred_image = process_image(data, bf, pp=True, imshow_f=False)
+    show(blurred_image)
 
-    # Print the FFT
-    fft_data = [x.real for x in fft.ravel()]
-    fft_data[0] = 0
-    new_image(fft_data, M, N).show()
 
-    # Apply the selected filter
-    array = apply_filter(fft, filter)
+    # Add Gaussian noise
+    #blurred_image_w_noise = blurred_image + gaussian_noise(0, 650, blurred_image.shape)
+    #blurred_image_w_noise = scale_data(blurred_image_w_noise)
+    #show(blurred_image_w_noise)
 
-    # Print the FFT after transformation
-    fft_data = [x.real for x in array.ravel()]
-    fft_data[0] = 0
-    new_image(fft_data, M, N).show()
+    # Inverse blurring filter
+    #ibf = inv_blurring_filter(a, b, T, data.shape)
 
-    # 2D Inverse Fast Fourier Transform
-    enhanced_img = np.fft.ifft2(np.asarray(array).reshape((M, N))).ravel()
+    # Apply the inverse blurring filter on the blurred image
+    #restored_image = process_image(blurred_image, ibf, imshow_f=False)
+    #show(restored_image)
 
-    # Retrieve the real part of the IFFT
-    #real_img = [sqrt(x.real**2 + x.imag**2) for x in enhanced_img]
-    real_img = [x.real for x in enhanced_img]
+    # Apply the inverse blurring filter on the blurred and noisy image
+    #restored_image = process_image(blurred_image_w_noise, ibf, imshow_f=False)
+    #show(restored_image)
 
-    # Postprocess the data: multiply by (-1)^(x+y)
-    #real_img = postprocess(real_img, M, N)
-    real_img = scale_filtered_data(real_img, M, N)
+    # Wiener filter
+    wf = wiener_filter(bf)
 
-    # Final image
-    final_img = new_image(real_img, M, N)
-    final_img.show()
+    # Apply the Wiener deconvolution filter on the blurred image
+    restored_image = process_image(blurred_image, wf, imshow_f=False)
+    show(restored_image)
+
+    # Apply the Wiener deconvolution filter on the blurred and noisy image
+    #restored_image = process_image(blurred_image_w_noise, wf, imshow_f=False)
+    #show(restored_image)
+
+    sys.exit(0)
