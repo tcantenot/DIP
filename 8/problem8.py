@@ -109,6 +109,19 @@ def closing(data, mask):
     return erosion(dilation(data, mask), mask)
 
 
+def morpho(op, data, mask, name, ref_op, show=True):
+
+    ref = 255 * ref_op(data, structure=mask).astype('uint8')
+
+    res = op(data, mask)
+
+    if show:
+        print "{1}### {0} ###{1}".format(name, os.linesep)
+        print "{0}{2}{2}{1}{2}".format(ref, res, os.linesep)
+
+    assert np.array_equal(ref, res), "{} is different from Scipy's".format(name)
+
+
 # Main
 if __name__ == "__main__":
 
@@ -153,53 +166,13 @@ if __name__ == "__main__":
     print ""
 
     # Erosion
-
-    ref = 255 * ndimage.binary_erosion(data, structure=mask).astype('uint8')
-
-    eroded = erosion(data, mask)
-
-    print ref
-    print ""
-    print eroded
-    print ""
-
-    assert np.array_equal(ref, eroded), "Erosion is different from Scipy's"
+    morpho(erosion, data, mask, "Erosion", ndimage.binary_erosion)
 
     # Dilation
-
-    ref = 255 * ndimage.binary_dilation(data, structure=mask).astype('uint8')
-
-    dilated = dilation(data, mask)
-
-    print ref
-    print ""
-    print dilated
-    print ""
-
-    assert np.array_equal(ref, dilated), "Dilation is different from Scipy's"
+    morpho(dilation, data, mask, "Dilation", ndimage.binary_dilation)
 
     # Opening
-
-    ref = 255 * ndimage.binary_opening(data, structure=mask).astype('uint8')
-
-    opened = opening(data, mask)
-
-    print ref
-    print ""
-    print opened
-    print ""
-
-    assert np.array_equal(ref, opened), "Opening is different from Scipy's"
+    morpho(opening, data, mask, "Opening", ndimage.binary_opening)
 
     # Closing
-
-    ref = 255 * ndimage.binary_closing(data, structure=mask).astype('uint8')
-
-    closed = closing(data, mask)
-
-    print ref
-    print ""
-    print closed
-    print ""
-
-    assert np.array_equal(ref, closed), "Closing is different from Scipy's"
+    morpho(closing, data, mask, "Closing", ndimage.binary_closing)
