@@ -49,7 +49,7 @@ def show(img_data):
     w, h = img_data.shape
     new_image(img_data.ravel(), w, h).show()
 
-def erosion(data, mask):
+def erosion(data, mask, b=0):
 
     new_data = np.zeros(data.shape, dtype=int)
 
@@ -61,11 +61,11 @@ def erosion(data, mask):
     for x in xrange(mask_w2, w-mask_w2):
         for y in xrange(mask_h2, h-mask_h2):
             neigh = data[x-mask_w2:x+mask_w2+1, y-mask_h2:y+mask_h2+1]
-            new_data[x,y] = data[x,y] if np.array_equal(neigh - mask, zeros) else 0
+            new_data[x,y] = data[x,y] if np.array_equal(neigh - mask, zeros) else b
 
     return new_data#[mask_w2:w-mask_w2, mask_h2:h-mask_h2]
 
-    return np.array([data[i[0], i[1]] if np.array_equal(data[i[0]-(mask.shape[0]/2):i[0]+(mask.shape[0]/2)+1, i[1]-(mask.shape[1]/2):i[1]+(mask.shape[1]/2)+1] - mask, np.zeros(mask.shape)) else 0 for i, d in np.ndenumerate(data) if i[0] >= (mask.shape[0]/2) and i[0] < data.shape[0]-(mask.shape[0]/2) and i[1] >= (mask.shape[1]/2) and i[1] < data.shape[1]-(mask.shape[1]/2)]).reshape((data.shape[0]-mask.shape[0]+1, data.shape[1]-mask.shape[1]+1))
+    return np.array([data[i[0], i[1]] if np.array_equal(data[i[0]-(mask.shape[0]/2):i[0]+(mask.shape[0]/2)+1, i[1]-(mask.shape[1]/2):i[1]+(mask.shape[1]/2)+1] - mask, np.zeros(mask.shape)) else b for i, d in np.ndenumerate(data) if i[0] >= (mask.shape[0]/2) and i[0] < data.shape[0]-(mask.shape[0]/2) and i[1] >= (mask.shape[1]/2) and i[1] < data.shape[1]-(mask.shape[1]/2)]).reshape((data.shape[0]-mask.shape[0]+1, data.shape[1]-mask.shape[1]+1))
 
 def dilation(data, mask, b=B):
 
@@ -101,6 +101,12 @@ def dilation(data, mask, b=B):
                     new_data[x, y] = b
 
     return new_data
+
+def opening(data, mask):
+    return dilation(erosion(data, mask), mask)
+
+def closing(data, mask):
+    return erosion(dilation(data, mask), mask)
 
 
 # Main
@@ -171,3 +177,29 @@ if __name__ == "__main__":
     print ""
 
     assert np.array_equal(ref, dilated), "Dilation is different from Scipy's"
+
+    # Opening
+
+    ref = 255 * ndimage.binary_opening(data, structure=mask).astype('uint8')
+
+    opened = opening(data, mask)
+
+    print ref
+    print ""
+    print opened
+    print ""
+
+    assert np.array_equal(ref, opened), "Opening is different from Scipy's"
+
+    # Closing
+
+    ref = 255 * ndimage.binary_closing(data, structure=mask).astype('uint8')
+
+    closed = closing(data, mask)
+
+    print ref
+    print ""
+    print closed
+    print ""
+
+    assert np.array_equal(ref, closed), "Closing is different from Scipy's"
