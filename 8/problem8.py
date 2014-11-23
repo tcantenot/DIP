@@ -81,27 +81,24 @@ def dilation(data, mask, b=B):
         for y in xrange(h):
             tmp[x+mask_w2, y+mask_h2] = data[x, y]
 
-
     zeros = np.zeros(mask.shape)
 
     for x in xrange(w):
         for y in xrange(h):
-            neigh = tmp[x-mask_w2:x+mask_w2+1, y-mask_h2:y+mask_h2+1]
+            neigh = tmp[x+mask_w2-mask_w2:x+mask_w2+mask_w2+1, y+mask_h2-mask_h2:y+mask_h2+mask_h2+1]
             if np.array_equal(neigh, zeros):
-                new_data[x, y] = tmp[x, y]
+                new_data[x, y] = tmp[x + mask_w2, y + mask_h2]
             else:
                 dilate = False
                 for i in xrange(mask_w):
                     xx = x - mask_w2 + i
                     for j in xrange(mask_h):
                         yy = y - mask_h2 + j
-                        if tmp[xx, yy] == mask[i, j]:
+                        if tmp[xx + mask_w2, yy + mask_h2] == mask[i, j]:
                             dilate = True
                             break
                 if dilate:
                     new_data[x, y] = b
-
-    #TODO: handle borders
 
     return new_data
 
@@ -153,11 +150,10 @@ if __name__ == "__main__":
 
     ref = 255 * ndimage.binary_erosion(data, structure=mask).astype('uint8')
 
-    print ref
-    print ""
-
     eroded = erosion(data, mask)
 
+    print ref
+    print ""
     print eroded
     print ""
 
@@ -167,11 +163,11 @@ if __name__ == "__main__":
 
     ref = 255 * ndimage.binary_dilation(data, structure=mask).astype('uint8')
 
-    print ref
-    print ""
-
     dilated = dilation(data, mask)
 
+    print ref
+    print ""
     print dilated
+    print ""
 
     assert np.array_equal(ref, dilated), "Dilation is different from Scipy's"
