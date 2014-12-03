@@ -7,64 +7,74 @@ import cmath
 from PIL import Image
 import numpy as np
 
-from scipy import misc
+
+# Gaussian noise
+def gaussian_noise(mu, sqsigma, shape):
+    return np.random.normal(mu, np.sqrt(sqsigma), shape)
 
 
+# Blurring filter
 def blurring_filter(a, b, T, shape):
-    m, n = shape
-    blurred = np.empty(shape, dtype=complex)
-
-    for u in xrange(-m/2, m/2+1):
-        for v in xrange(-n/2, n/2+1):
-            x = u * a + v * b
-            if x != 0:
-                blurred[u, v] = T/(np.pi*(u*a+v*b)) * np.sin(np.pi*(u*a+v*b)) * np.exp(-1j*np.pi*(u*a+v*b))
-            else:
-                blurred[u, v] = T * np.exp(-1j*np.pi*(u*a+v*b))
-
-    return blurred
-
-def blurring_filter_(a, b, T, shape):
     m, n = shape
     u, v = np.ogrid[-m/2:m/2, -n/2:n/2]
     return T * np.sinc(u*a+v*b) * np.exp(-1j*np.pi*(u*a+v*b))
 
-def inv_blurring_filter(a, b, T, shape):
-    return 1./blurring_filter(a, b, T, shape)
+
+# Inverse filter
+def inverse_filter(filter, d=0.01):
+    """
+        filter: Filter to invert
+        d:      Threshold to constrain the division
+    """
+    return np.vectorize(lambda x: 1./x if np.abs(x) >= d else 1.0, otypes=[np.complex])(filter)
 
 
-def wiener_filter(H, K=0.1):
-    H2 = np.abs(H) ** 2
-    return (1./H) * (H2 / (H2 + K))
+# Wiener filter
+def wiener_filter(S, H, N=None):
+    """
+        S: Input image
+        H: Degradation function
+        N: Noise function
+    """
 
-
-def wiener_filter_(H, N):
-
-    #Sxx = np.abs(np.fft.fft2(H)) ** 2
-    Sxx = H ** 2
+    Sxx = np.abs(np.fft.fft2(preprocess(S))) ** 2
+    #Sxx = S ** 2
 
     if 0:
         fft = np.fft.fft2(preprocess(H))
         show(fft)
         show(np.abs(fft) ** 2)
 
-    #Snn = np.abs(np.fft.fft2(N)) ** 2
-    Snn = N ** 2
+    Snn = N ** 2 if N is not None else None
+    #Snn = np.abs(np.fft.fft2(N)) ** 2 if N is not None else None
 
-    K = Snn / Sxx
+    #return np.conj(H).T / (np.abs(H) ** 2 + Snn/Sxx) if Snn is not None else inverse_filter(H)
 
-    H2 = np.abs(H * H)
-    return (1./H) * (H2 / (H2 + K))
+    if Snn is not None:
+        m, n = H.shape
+
+        d = 0.003
+
+        result = np.empty(H.shape, dtype=complex)
+
+        conjHT = np.conj(H).T
+        denoms = (np.abs(H) ** 2 + Snn/Sxx)
+
+        for u in xrange(m):
+            for v in xrange(n):
+                denom = denoms[u, v]
+                result[u, v] = conjHT[u, v] / denom if np.abs(denom) >= d else 1.0
+
+        return result
+
+    else:
+        return inverse_filter(H)
 
 
-def wiener_param(H, S, K=0.1):
+
+def wiener_param(H, S, NSR=0.1):
     H2 = np.abs(H) ** 2
-    return (1./H)**S * (H2 / (H2 + K)) ** (1 - S)
-
-
-# Gaussian noise
-def gaussian_noise(mu, sigma, shape):
-    return np.random.normal(mu, sigma, shape)
+    return (1./H)**S * (H2 / (H2 + NSR)) ** (1 - S)
 
 
 # Preprocessing
@@ -110,10 +120,10 @@ def show_fourier(fft_data):
     new_image(fft_img, M, N).show()
 
 
-def process_image(img, filter, pp=True, scale=True, imshow_f=False):
+def apply_filter(img, filter, center=True, scale=True, imshow_f=False):
 
     # Preprocess the data: multiply by (-1)^(x+y)
-    if pp: img = preprocess(img)
+    if center: img = preprocess(img)
 
     # 2D Fast Fourier Transform
     fft_data = np.fft.fft2(img)
@@ -130,7 +140,7 @@ def process_image(img, filter, pp=True, scale=True, imshow_f=False):
     real_img = extract_real(filtered_img)
 
     # Postprocess the data: multiply by (-1)^(x+y)
-    if pp: real_img = postprocess(real_img)
+    if center: real_img = postprocess(real_img)
 
     # Scale the pixels values
     if scale: real_img = scale_data(real_img)
@@ -155,8 +165,8 @@ if __name__ == "__main__":
         help='Add Gaussian noise'
     )
 
-    parser.add_argument('-s', dest='s', type=float, default=5,
-        help='Sigma (variance) of the Gaussian noise'
+    parser.add_argument('-s', dest='s', type=float, default=650,
+        help='Variance (sigma square) of the Gaussian noise'
     )
 
     parser.add_argument('--inv', action='store_true',
@@ -193,62 +203,55 @@ if __name__ == "__main__":
     K = args.K      # Signal-to-noise ratio
     sigma = args.s  # Sigma (variance) of the Gaussian noise
 
-    shape = None
-    bf = None
+
+    image = Image.open(args.image_path).convert('L')
+    #image.show()
+
+    # Image's pixels
+    data = np.array(image.getdata()).reshape(image.size)
+    shape = data.shape
+
+    # Blurring filter
+    bf = blurring_filter(a, b, T, shape)
+
     blurred_image = None
 
+    # Blur the image...
     if not args.blurred:
-        image = Image.open(args.image_path).convert('L')
-        image.show()
-
-        M, N = image.size
-
-        # Image's pixels
-        data = np.array(image.getdata()).reshape((M, N))
-
-        shape = data.shape
-
-        # Blurring filter
-        bf = blurring_filter(a, b, T, data.shape)
-
-        # Apply the blurring filter
-        blurred_image = process_image(data, bf, pp=False, imshow_f=False)
+        blurred_image = apply_filter(data, bf)
         show(blurred_image)
 
+   # ... or load a precomputed blurred image
     else:
-
-        # Load precomputed blurred image
         blurred_image = Image.open(args.blurred).convert('L')
         blurred_image = np.array(blurred_image.getdata()).reshape(blurred_image.size)
         show(blurred_image)
 
-        shape = blurred_image.shape
-
-
-    # Blurring filter
-    if bf is None:
-        bf = blurring_filter(a, b, T, shape)
 
     # Add Gaussian noise
     blurred_image_w_noise = None
+    noise = None
     if args.noise:
-        blurred_image_w_noise = blurred_image + gaussian_noise(0, sigma, shape)
+        noise = gaussian_noise(0, sigma, shape)
+        blurred_image_w_noise = blurred_image + noise
         blurred_image_w_noise = scale_data(blurred_image_w_noise)
         show(blurred_image_w_noise)
 
 
     # Inverse filter
     if args.inv:
+
         # Inverse blurring filter
-        ibf = 1./bf
+        ibf = inverse_filter(bf)
 
         # Apply the inverse blurring filter on the blurred image
-        restored_image = process_image(blurred_image, ibf, pp=False, imshow_f=False)
-        show(restored_image)
+        if not args.noise:
+            restored_image = apply_filter(blurred_image, ibf)
+            show(restored_image)
 
         # Apply the inverse blurring filter on the blurred and noisy image
-        if args.noise:
-            restored_image = process_image(blurred_image_w_noise, ibf, pp=False, imshow_f=False)
+        else:
+            restored_image = apply_filter(blurred_image_w_noise, ibf)
             show(restored_image)
 
 
@@ -256,17 +259,15 @@ if __name__ == "__main__":
     if args.wiener:
 
         # Wiener filter
-        wf = wiener_filter(bf, K)
-        #wf = wiener_filter_(bf, gaussian_noise(0, sigma, shape))
-        #wf = wiener_param(bf, 0.1, K)
+        wf = wiener_filter(data, bf, noise)
 
         # Apply the Wiener deconvolution filter on the blurred image
-        restored_image = process_image(blurred_image, wf, pp=False, imshow_f=False)
-        show(restored_image)
-
-        # Apply the Wiener deconvolution filter on the blurred and noisy image
-        if args.noise:
-            restored_image = process_image(blurred_image_w_noise, wf, pp=False, imshow_f=False)
+        if not args.noise:
+            restored_image = apply_filter(blurred_image, wf)
             show(restored_image)
 
-    sys.exit(0)
+        # Apply the Wiener deconvolution filter on the blurred and noisy image
+        else:
+            restored_image = apply_filter(blurred_image_w_noise, wf)
+            show(restored_image)
+
