@@ -5,26 +5,6 @@ from PIL import Image
 import numpy as np
 from scipy import fftpack
 
-# Preprocessing
-def preprocess(data):
-    x, y = np.ogrid[0:data.shape[0], 0:data.shape[1]]
-    return data * ((-1)**(x+y))
-
-# Postprocessing
-def postprocess(data):
-    return preprocess(data)
-
-# Scale the data between 0 and 255
-def scale_data(data):
-    min_value = np.min(data)
-    scaled_data = data - np.full(data.shape, min_value)
-    max_value = np.max(scaled_data)
-    scaled_data = scaled_data * np.full(data.shape, 255./max_value)
-    return scaled_data
-
-def extract_real(img):
-    return np.array([x.real for _, x in np.ndenumerate(img)]).reshape(M, N)
-
 # Create and return a new image of size (w, h) from the given linear array of pixels
 def new_image(pixels, w, h):
     image = Image.new("L", [w, h])
@@ -34,23 +14,10 @@ def new_image(pixels, w, h):
             data[x, y] = pixels[y*w+x]
     return image
 
-
 def show(img_data):
     w, h = img_data.shape
     new_image(img_data.ravel(), w, h).show()
 
-def show_fourier(fft_data):
-    fft_img = fft_data.ravel()
-    fft_img[0] = 0
-    new_image(fft_img, M, N).show()
-
-
-# Generator yielding 8x8 subimages
-def subimages(img, size):
-    w, h = img.shape
-    for x in xrange(0, w, size):
-        for y in xrange(0, h, size):
-            yield img[x:x+size, y:y+size]
 
 # Textbook p598: Zonal mask
 def zonal_mask(n, s=8):
@@ -82,17 +49,37 @@ def threshold_mask():
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0 ]).reshape(8, 8)
 
+
+# Apply a mask to an image
 def apply_mask(subimg, mask):
     return subimg * mask
 
+
+# Two-dimensional discrete cosine transform
 def dct2(data):
     return fftpack.dct(fftpack.dct(data.T, norm='ortho').T, norm='ortho')
 
+# Inverse two-dimensional discrete cosine transform
 def idct2(data):
     return fftpack.idct(fftpack.idct(data.T, norm='ortho').T, norm='ortho')
 
 
+# Generator yielding 8x8 subimages
+def subimages(img, size):
+    w, h = img.shape
+    for x in xrange(0, w, size):
+        for y in xrange(0, h, size):
+            yield img[x:x+size, y:y+size]
+
+# Compress the image
 def compress_image(img, mask):
+    """
+    Divide the image into 8-by-8 subimages,
+    compute the two-dimensional discrete cosine transform of each subimage,
+    compress the test image to different qualities by discarding some
+    DCT coefficients based on a mask and use the inverse discrete cosine
+    transform with fewer transform coefficients.
+    """
 
     MASK_SIZE = 8
 
@@ -107,7 +94,11 @@ def compress_image(img, mask):
 
     return chunks
 
+# Reconstruct the image from chunks
 def reconstruct_image(img_chunks, w, h):
+    """
+    Reconstruct the image using an array of subimages
+    """
 
     img = np.empty((w, h))
     sx, sy = img_chunks[0][1].shape
@@ -119,7 +110,6 @@ def reconstruct_image(img_chunks, w, h):
                 for j in xrange(sy):
                     y = c * sy + j
                     img[x, y] = ch[i, j]
-
     return img
 
 
@@ -133,6 +123,16 @@ if __name__ == "__main__":
 
     parser.add_argument('image_path', type=str, help='Image path')
 
+    quantization_masks = parser.add_mutually_exclusive_group()#required=True)
+    quantization_masks.add_argument('--zonal', action='store_true',
+        help='Use a zonal mask'
+    )
+    quantization_masks.add_argument('--threshold', action='store_true',
+        help='Use a threshold mask'
+    )
+
+    parser.add_argument('-z', dest='z', type=int, default=4, help='Zonal mask size')
+
     parser.add_argument('--quant', type=str, help='Image path')
 
     # Parse args
@@ -141,21 +141,8 @@ if __name__ == "__main__":
     # Image path
     image_path = args.image_path
 
-    a, b, T = 0.1, 0.1, 1
-
-    # Check that the image exists
-    if not os.path.isfile(image_path):
-        print "Could not find image '{}'".format(image_path)
-        sys.exit(-1)
-
     # Open image
-    image = Image.open(image_path)
-    if image == None:
-        print "Failed to open image '{}'".format(image_path)
-        sys.exit(-2)
-
-    # Make sure the image is a gray scale image
-    image = image.convert('L')
+    image = Image.open(image_path).convert('L')
     image.show()
 
     M, N = image.size
@@ -163,13 +150,17 @@ if __name__ == "__main__":
     # Image's pixels
     data = np.array(image.getdata(), dtype=float).reshape((M, N))
 
-    # Compress the image
-    chunks = compress_image(data, zonal_mask(15))
+    chunks = None
+    if args.zonal:
+        # Compress the image
+        chunks = compress_image(data, zonal_mask(args.z))
+    elif args.threshold:
+        chunks = compress_image(data, threshold_mask())
 
-    # Reconstruct the image
-    final_img = reconstruct_image(chunks, M, N)
+    if chunks is not None:
+        # Reconstruct the image
+        final_img = reconstruct_image(chunks, M, N)
+        show(final_img)
 
-    show(final_img)
-
-    # Difference between original and reconstructed
-    show(data - final_img)
+        # Difference between original and reconstructed
+        show(data - final_img)
