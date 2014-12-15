@@ -3,7 +3,7 @@
 import argparse, os, sys
 from PIL import Image
 import numpy as np
-from scipy import signal
+from scipy import signal, misc
 from scipy.ndimage.filters import gaussian_filter
 
 
@@ -14,6 +14,41 @@ def show(img_data):
 # Gaussian smoothing
 def smooth_gauss(img, sigma):
     return gaussian_filter(img, np.sqrt(sigma))
+
+laplacian_mask = np.array([
+    [1, 1, 1],
+    [1, -8, 1],
+    [1, 1, 1]
+])
+
+# Marr-Hildreth
+def marr_hildreth(img, sigma):
+
+    def zero_crossing(img, threshold=12.5):
+
+        def cross(lhs, rhs):
+            return np.sign(lhs) != np.sign(rhs) and np.abs(rhs - lhs) > threshold
+
+        output = np.zeros(img.shape, dtype=np.uint8)
+
+        M, N = img.shape
+        for (x, y), n in np.ndenumerate(img):
+            if x == 0 or x == (M-1) or y == 0 or y == (N-1): continue
+
+            if   cross(img[x-1, y], img[x+1, y]): output[x, y] = 255
+            elif cross(img[x, y-1], img[x, y+1]): output[x, y] = 255
+            elif cross(img[x-1, y-1], img[x+1, y+1]): output[x, y] = 255
+            elif cross(img[x-1, y+1], img[x+1, y-1]): output[x, y] = 255
+
+        return output
+
+
+    smoothed  = smooth_gauss(img, sigma)
+    show(np.array(smoothed, dtype=np.uint8))
+    laplacian = signal.convolve2d(smoothed, laplacian_mask, mode='same')
+
+    return zero_crossing(laplacian)
+
 
 # Masks
 
@@ -31,6 +66,7 @@ sobel_masks = (
     np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]), \
     np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
 )
+
 
 # Compute the gradient magnitudes using a mask
 def gradient_magnitude(img, mask_type='roberts'):
@@ -208,6 +244,63 @@ def hysteresis_thresholding(magnitudes, T_H, T_L):
 
     return output
 
+def global_thresholding(img, epsilon=0.01):
+
+    threshold     = np.percentile(img, 1.0)
+    new_threshold = np.percentile(img, 99.0)
+
+    while np.abs(threshold - new_threshold) > epsilon:
+        threshold = new_threshold
+        m1 = np.mean(img[img > threshold])
+        m2 = np.mean(img[img <= threshold])
+        new_threshold = 0.5 * (m1 + m2)
+
+    output = np.zeros(img.shape, np.uint8)
+    output[img > new_threshold] = 255
+
+    return output
+
+def otsu(img):
+
+    M, N = img.shape
+
+    # Normalized histogram
+    histogram = np.array([0.0 for _ in xrange(255)], dtype=np.float)
+    for _, x in np.ndenumerate(img):
+        histogram[x] += 1
+
+    histogram = histogram / (M * N)
+
+    # Cumulative sums
+    cumul_sums = np.copy(histogram)
+    for k in xrange(1, 255):
+        cumul_sums[k] = cumul_sums[k-1] + histogram[k]
+
+    # Cumulative means
+    cumul_means = np.zeros(histogram.shape)
+    for k in xrange(1, 255):
+        cumul_means[k] = cumul_means[k-1] + k * histogram[k]
+
+    # Global mean
+    mg = cumul_means[-1]
+
+    # In between class variances
+    sigma = np.zeros(histogram.shape)
+    for k in xrange(255):
+        P1k = cumul_sums[k]
+        mk = cumul_means[k]
+        sigma[k] = (mg * P1k - mk) ** 2.0 / (P1k * (1.0 - P1k)) if P1k != 0 else -float('inf')
+
+    # Otsu threshold
+    k_max = np.argmax(sigma, axis=0)
+
+    # Separability measure
+    nu = sigma[k_max] / np.var(img)
+
+    output = np.zeros(img.shape, np.uint8)
+    output[img > k_max] = 255
+    return output
+
 
 # Main
 if __name__ == "__main__":
@@ -244,6 +337,26 @@ if __name__ == "__main__":
 
     # Parse args
     args = parser.parse_args()
+
+    image = Image.open(args.image_path).convert('L')
+    data = np.array(image, dtype=int)
+
+    # Otsu
+    o = otsu(data)
+    show(o)
+    sys.exit(0)
+
+    # Global thresholding
+    gt = global_thresholding(data) #, args.epsilon)
+    show(gt)
+    sys.exit(0)
+
+    # Marr-Hildreth
+    mh = marr_hildreth(data, args.sigma)
+    misc.imsave('marr_hildreth.tif', mh)
+    show(mh)
+
+    sys.exit(0)
 
     if args.cheat:
         import cv2
