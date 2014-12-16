@@ -29,7 +29,7 @@ class Point(object):
 def boundary_following_(img, b0, visited, v):
 
     boundary = []
-    boundary.append(b0)
+    boundary.append(b0.b)
 
     valid = True
 
@@ -55,7 +55,7 @@ def boundary_following_(img, b0, visited, v):
 
     b1_reached = False
 
-    boundary.append(b)
+    boundary.append(b.b)
 
     while True:
 
@@ -79,11 +79,11 @@ def boundary_following_(img, b0, visited, v):
             previous_c = np.array([x, y])
 
         b = next_b
-        boundary.append(b)
+        boundary.append(b.b)
 
         if b1_reached and np.array_equal(b.b, b0.b): break
 
-    return boundary if valid else None
+    return np.array(boundary) if valid else None
 
 
 def boundary_following(img):
@@ -115,4 +115,4 @@ def boundary_following(img):
 
             iteration += 1
 
-    return boundaries
+    return np.array(boundaries)

@@ -60,6 +60,30 @@ def resample_image(image, grid_spacing):
 
     return resampled
 
+# Resample the given boudary using the given grid spacing
+def resample_boundary(boundary, grid_spacing):
+    """
+    boundary:     Ordered list of boundary point.
+    grid_spacing: [sx, sy] grid spacing in x and y direction.
+    """
+    output = []
+    resampled = (nearest_grid_point(b, grid_spacing) for b in boundary)
+    unique = set()
+    for p in resampled:
+        p = tuple(p)
+        if p not in unique:
+            unique.add(p)
+            x, y = p
+            output.append([x, y])
+
+    return np.array(output, np.int)
+    #return np.array(list(set(tuple(p) for p in
+
+def show_resampled_boundary(boundary, shape):
+    image = np.zeros(shape)
+    for (x, y) in boundary: image[x, y] = 255
+    show(image)
+
 
 # Main
 if __name__ == "__main__":

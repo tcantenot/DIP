@@ -48,8 +48,12 @@ if __name__ == "__main__":
 
     image = Image.open(args.image_path).convert('L')
     data = np.array(image, np.uint8)
+
+    data = smooth_gauss(data, 10)
+
     data[data < 128] = 0
     data[data >= 128] = 255
+
 
     show(data)
 
