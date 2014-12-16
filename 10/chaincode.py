@@ -34,11 +34,21 @@ def chaincode_8(boundary):
 
         chaincode.append(code)
 
-    return np.array(chaincode, np.uint8)
+    return np.array(chaincode, np.int)
 
-
+# Compute the first difference of a 8-chaincode
 def first_difference_8(chaincode):
-    pass
+    """
+    chaincode: 8-chaincode array
+    """
+
+    first_diff = []
+    for i in xrange(1, chaincode.shape[0]):
+        diff = chaincode[i] - chaincode[i-1]
+        first_diff.append(diff if diff >= 0 else 8 + diff)
+
+    return np.array(first_diff, np.int)
+
 
 # Main
 if __name__ == "__main__":
@@ -70,7 +80,10 @@ if __name__ == "__main__":
 
     # Compute 8-chaincode
     chaincode = chaincode_8(resampled)
-
     chaincode_str = "".join(str(x) for x in chaincode)
-
     print "Chaincode (length = {}): {}".format(len(chaincode_str), chaincode_str)
+
+    # Compute first difference of the 8-chaincode
+    first_difference = first_difference_8(chaincode)
+    first_difference_str = "".join(str(x) for x in first_difference)
+    print "First diff (length = {}): {}".format(len(first_difference_str), first_difference_str)
