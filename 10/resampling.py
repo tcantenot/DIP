@@ -45,13 +45,29 @@ def nearest_grid_point(p, grid_spacing, grid_min=[0, 0]):
 
     return [x, y]
 
+# Resample the image using the given grid spacing
+def resample_image(image, grid_spacing):
+    """
+    image:        Input image.
+    grid_spacing: [sx, sy] grid spacing in x and y direction.
+    """
+
+    resampled = np.zeros(image.shape)
+    for (x, y), d in np.ndenumerate(image):
+        if d != 255: continue
+        xx, yy = nearest_grid_point([x, y], grid_spacing)
+        resampled[xx, yy] = 255
+
+    return resampled
+
+
 # Main
 if __name__ == "__main__":
 
     # Available args
     parser = argparse.ArgumentParser(description='Resampling grid')
 
-    parser.add_argument('image_path', type=str, help='Boundary image path')
+    parser.add_argument('boundary_image', type=str, help='Black and white boundary image')
 
     parser.add_argument('-s', '--sampling', dest='sampling', nargs = '+',
         type=int, default=[10, 10],
@@ -62,17 +78,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Input boundary image
-    image = np.array(Image.open(args.image_path).convert('L'), np.uint8)
+    image = np.array(Image.open(args.boundary_image).convert('L'), np.uint8)
     show(image)
 
-    # Sampling spacing
-    sx, sy = args.sampling[0], args.sampling[1]
-
     # Resample grid
-    resampled = np.zeros(image.shape)
-    for (x, y), d in np.ndenumerate(image):
-        if d != 255: continue
-        xx, yy = nearest_grid_point([x, y], [sx, sy])
-        resampled[xx, yy] = 255
-
+    resampled = resample_image(image, args.sampling)
     show(resampled)
