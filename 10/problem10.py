@@ -51,18 +51,18 @@ if __name__ == "__main__":
     data[data < 128] = 0
     data[data >= 128] = 255
 
-    #show(data)
+    show(data)
 
     #data = test * 255
-    data = test1 * 255
+    #data = test1 * 255
 
-    boundary = boundary_following(data)
-    #print boundary
+    boundaries = boundary_following(data)
 
     result = np.zeros(data.shape)
 
-    for b in boundary:
-        x, y = b.b
-        result[x, y] = 255
+    for boundary in boundaries:
+        for b in boundary:
+            x, y = b.b
+            result[x, y] = 255
 
     show(result)
