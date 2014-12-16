@@ -5,19 +5,22 @@ from PIL import Image
 import numpy as np
 from scipy import fftpack
 
-# Create and return a new image of size (w, h) from the given linear array of pixels
-def new_image(pixels, w, h):
-    image = Image.new("L", [w, h])
-    data = image.load()
-    for x in xrange(w):
-        for y in xrange(h):
-            data[x, y] = pixels[y*w+x]
-    return image
+class Img(object):
 
+    @staticmethod
+    def open(path, gray_scale=True):
+        img = PIL.Image.open(path)
+        if gray_scale:
+            img = img.convert('L')
+        return np.array(img)
+
+    @staticmethod
+    def show(img_data):
+        PIL.Image.fromarray(img_data).show()
+
+# Show an image
 def show(img_data):
-    w, h = img_data.shape
-    new_image(img_data.ravel(), w, h).show()
-
+    Image.fromarray(img_data).show()
 
 # Textbook p598: Zonal mask
 def zonal_mask(n, s=8):
@@ -148,7 +151,7 @@ if __name__ == "__main__":
     M, N = image.size
 
     # Image's pixels
-    data = np.array(image.getdata(), dtype=float).reshape((M, N))
+    data = np.array(image, dtype=float)
 
     chunks = None
     if args.zonal:

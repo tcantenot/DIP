@@ -45,8 +45,8 @@ def wiener_filter(S, H, N=None):
         show(fft)
         show(np.abs(fft) ** 2)
 
-    Snn = N ** 2 if N is not None else None
-    #Snn = np.abs(np.fft.fft2(N)) ** 2 if N is not None else None
+    #Snn = N ** 2 if N is not None else None
+    Snn = np.abs(np.fft.fft2(N)) ** 2 if N is not None else None
 
     #return np.conj(H).T / (np.abs(H) ** 2 + Snn/Sxx) if Snn is not None else inverse_filter(H)
 
