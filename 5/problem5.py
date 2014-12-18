@@ -17,7 +17,8 @@ def gaussian_noise(mu, sqsigma, shape):
 def blurring_filter(a, b, T, shape):
     m, n = shape
     u, v = np.ogrid[-m/2:m/2, -n/2:n/2]
-    return T * np.sinc(u*a+v*b) * np.exp(-1j*np.pi*(u*a+v*b))
+    x = u * a + v * b
+    return T * np.sinc(x) * np.exp(-1j*np.pi*x)
 
 
 # Inverse filter
@@ -90,34 +91,22 @@ def postprocess(data):
 # Scale the data between 0 and 255
 def scale_data(data):
     min_value = np.min(data)
-    scaled_data = data - np.full(data.shape, min_value)
+    scaled_data = data - min_value
     max_value = np.max(scaled_data)
-    scaled_data = scaled_data * np.full(data.shape, 255./max_value)
+    scaled_data = scaled_data * (255./max_value)
     return scaled_data
 
 
-def extract_real(img):
-    return np.array([x.real for _, x in np.ndenumerate(img)]).reshape(img.shape)
-
-
-# Create and return a new image of size (w, h) from the given linear array of pixels
-def new_image(pixels, w, h):
-    image = Image.new("L", [w, h])
-    data = image.load()
-    for x in xrange(w):
-        for y in xrange(h):
-            data[x, y] = pixels[y*w+x]
-    return image
-
-
+# Show an image
 def show(img_data):
-    w, h = img_data.shape
-    new_image(img_data.ravel(), w, h).show()
+    Image.fromarray(img_data).show()
+
 
 def show_fourier(fft_data):
     fft_img = fft_data.ravel()
     fft_img[0] = 0
-    new_image(fft_img, M, N).show()
+    fft_img.reshape(fft_data.shape)
+    show(fft_img)
 
 
 def apply_filter(img, filter, center=True, scale=True, imshow_f=False):
@@ -137,7 +126,7 @@ def apply_filter(img, filter, center=True, scale=True, imshow_f=False):
     filtered_img = np.fft.ifft2(filtered_data)
 
     # Retrieve the real part of the IFFT
-    real_img = extract_real(filtered_img)
+    real_img = filtered_img.real
 
     # Postprocess the data: multiply by (-1)^(x+y)
     if center: real_img = postprocess(real_img)
