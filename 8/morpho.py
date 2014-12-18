@@ -23,21 +23,8 @@ def boundary_extraction(input, structure):
     return input - erosion(input, structure)
 
 # Holes filling
-def holes_filling(input, structure):
-    mask = complementary(input)
+def holes_filling(input, _):
 
-    #iter = 0
-    X0 = np.zeros(input.shape)
-    while True:
-        X1 = dilation(X0, structure, mask=mask, border_value=1)
-        if np.array_equal(X0, X1): break
-        X0 = X1
-        #iter += 1
-        #if iter % 15 == 0: show_binary_img(X0)
-
-    return complementary(X0)
-
-def holes_filling(input):
     struct_1 = np.array([
         [1], [1], [1]
     ])
@@ -57,29 +44,22 @@ def holes_filling(input):
     iter = 0
     X0 = np.zeros(input.shape)
     while True:
-        #X1 = dilation(X0, structure, mask=mask, border_value=1)
-        #X1 = dilation2D(X0, struct_1, struct_2, border_value=1, mask=mask)
-        #X1 = ndimage.binary_dilation(X0, structure, border_value=1, mask=mask)
         d1 = ndimage.binary_dilation(X0, struct_1, border_value=1, mask=mask)
         d2 = ndimage.binary_dilation(X0, struct_2, border_value=1, mask=mask)
         X1 = union(d1, d2)
 
-
-        #show_binary_img(X1)
-        #break
         if np.array_equal(X0, X1): break
         X0 = X1
-        iter += 1
-        if iter % 15 == 0: show_binary_img(X0)
+        #iter += 1
+        #if iter % 50 == 0: show_binary_img(X0)
 
     return complementary(X0)
-
 
 
 # Connected component extraction
 def connected_extraction(input, structure):
 
-    X0 = None
+    X0 = input
     X1 = None
     while True:
         X1 = intersection(dilation(X0, structure), input)

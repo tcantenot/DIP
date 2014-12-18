@@ -1,17 +1,18 @@
 import numpy as np
 from PIL import Image
 
-# Create and return a new image of size (w, h) from the given linear array of pixels
-def new_image(pixels, w, h):
-    image = Image.new('1', [w, h])
-    data = image.load()
-    for x in xrange(w):
-        for y in xrange(h):
-            data[x, y] = pixels[y*w+x]
-    return image
+# Load an grey-scale image
+def load(path):
+    return np.array(Image.open(path).convert('L'), np.uint8)
 
+# Display an image
+def show(img):
+    Image.fromarray(img).show()
 
-# Display a binray image
-def show_binary_img(img_data):
-    w, h = img_data.shape
-    new_image(img_data.ravel(), w, h).show()
+# Display a binary image
+def show_binary_img(img):
+    show(img.astype(np.uint8) * 255)
+
+# Save an image to disk
+def save(path, img):
+    Image.fromarray(scale_data(img).astype(np.uint8)).save(path)
