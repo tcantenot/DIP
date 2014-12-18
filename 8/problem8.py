@@ -164,8 +164,9 @@ if __name__ == "__main__":
 
     # Connected components extraction
     if args.connected:
-        img[img < 128]  = 0
-        img[img >= 128] = 1
+        threshold = 203
+        img[img < threshold]  = 0
+        img[img >= threshold] = 1
         show_binary_img(img)
         structure = np.full((3, 3), 1, dtype=int)
         connected = morpho(connected_extraction, img, structure, "Connected components extraction", debug=debug)

@@ -62,7 +62,8 @@ def connected_extraction(input, structure):
     X0 = input
     X1 = None
     while True:
-        X1 = intersection(dilation(X0, structure), input)
+        #X1 = intersection(dilation(X0, structure), input)
+        X1 = intersection(ndimage.binary_dilation(X0, structure), input)
         if np.array_equal(X0, X1): break
         X0 = X1
 
