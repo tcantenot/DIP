@@ -22,7 +22,12 @@ class Img:
     # Display a binary image
     @staticmethod
     def show_binary(img):
-        show(img * 255, dtype=np.uint8)
+        Img.show(img * 255, dtype=np.uint8)
+
+    # Show differences between two images
+    @staticmethod
+    def show_diff(lhs, rhs, dtype=None):
+        Img.show(np.abs(lhs - rhs), dtype=dtype)
 
     # Save the given image to disk
     @staticmethod
@@ -35,7 +40,7 @@ class Img:
     # Save the given image to disk
     @staticmethod
     def save_binary(path, img):
-        save(path, img * 255, dtype=np.uint8)
+        Img.save(path, img * 255, dtype=np.uint8)
 
     # Scale the image intensity between 0 and 255
     @staticmethod
