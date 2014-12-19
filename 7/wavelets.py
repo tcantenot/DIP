@@ -1,5 +1,7 @@
 import numpy as np
 
+from scipy import misc
+
 import sys
 sys.path.append('..')
 from common import Img
@@ -46,22 +48,57 @@ def encode_wavelet(img, kernel, level):
     return output
 
 def decode_wavelet(img, kernel, level):
-    output = img[:]
+    output = np.copy(img)
     for _ in xrange(level):
         output = np.dot(kernel, np.dot(output, kernel.T))
     return output
 
 def haar_kernel(shape):
     M, _ = shape
-    return (np.vstack(((np.kron(np.eye(M / 2), haar_h0)), (np.kron(np.eye(M / 2), haar_h1)))).T)
+    return (np.vstack((np.kron(np.eye(M / 2), haar_h0), np.kron(np.eye(M / 2), haar_h1))).T)
+
+def wavelet_kernel(h0, h1, shape):
+    M, _ = shape
+    fwd = np.zeros(shape)
+    for i in xrange(0, M / 2):
+        for j in xrange(len(h0)):
+            fwd[i, (2 * i + j) % M] = h0[j]
+            fwd[(M / 2) + i, (2 * i + j) % M] = h1[j]
+    return fwd.T
+
+def daubechies_kernel(shape):
+    h0 = daubechies_g0[::-1]
+    g1 = [h * (-1.)**i for i, h in enumerate(h0)]
+    h1 = g1[::-1]
+    return wavelet_kernel(h0, h1, shape)
+
+def symlet_kernel(shape):
+    h0 = symlet_g0[::-1]
+    g1 = [h * (-1.)**i for i, h in enumerate(h0)]
+    h1 = g1[::-1]
+    return wavelet_kernel(h0, h1, shape)
+
+def cohen_kernel(shape):
+    return wavelet_kernel(cohen_h0, cohen_h1, shape)
+
 
 if __name__ == '__main__':
-    img = Img.load('lenna.tif', np.float)
+
+    img = Img.load('lichtenstein.png', np.float)
     level = 1
+
     kernel = haar_kernel(img.shape)
+    #kernel = daubechies_kernel(img.shape)
+    #kernel = symlet_kernel(img.shape)
+    #kernel = cohen_kernel(img.shape)
+
     encoded = encode_wavelet(img, kernel, level)
     Img.show(encoded)
+
     threshold = 0.
     encoded[encoded < threshold] = 0.
-    decoded = decode_wavelet(img, kernel, level)
+
+    decoded = decode_wavelet(encoded, kernel, level)
+
     Img.show(Img.scale(decoded), np.uint8)
+    Img.show_diff(decoded, img)
