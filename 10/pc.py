@@ -35,9 +35,7 @@ def principal_components(images, n=None, debug=False, showr=False, showdiff=Fals
         if debug: print "{} {}\n{}\n".format(str, x.shape, x)
 
     def remove_eigen_vectors(A, n):
-        r = np.copy(A)
-        r[-n:] = 0.0
-        return r
+        return A[:-n]
 
     M, N, O = images.shape
     x = images.reshape((M, N * O))
@@ -69,6 +67,8 @@ def principal_components(images, n=None, debug=False, showr=False, showdiff=Fals
                     .format(dn, "s" if dn > 1 else "")
             A = remove_eigen_vectors(A, dn)
             pprint("New A", A)
+    else:
+        n = M
 
     # Hotelling transform
     y = np.dot(A, (x - means))
