@@ -1,44 +1,30 @@
 #!/usr/bin/python
 
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse, os
+import numpy as np
 from matplotlib import pyplot
+
+from common import Img
+
 
 # Hexadecimal encoding from a RGB triplet
 def hexencode(r, g, b):
     return '#%02x%02x%02x' % (r, g, b)
 
-
 # Compute and return the histogram of the given image
 def histogram(image):
-
-    pixels = list(image.getdata())
-
-    # Gray-scale image
-    if image.mode == "L":
-        hist = [0] * 256
-        for c in pixels: hist[c] += 1
-        return hist
-
-    # RGB image
-    elif image.mode == "RGB":
-        hist = [0] * 256
-        for c in pixels: hist[c[0]] += 1
-        return hist
-
-    # Not supported format
-    else: print "Image mode not supported: '{}'".format(img.mode)
-
-    return None
-
+    hist = np.zeros((256, 1))
+    for _, c in np.ndenumerate(image): hist[c] += 1
+    return hist
 
 # Compute and return the cumulated histogram from the given histogram
 def cumulated_histogram(hist):
-    cumul_hist_plot = [0] * len(hist)
-
+    cumul_hist_plot = np.zeros((256, 1))
     for i, h in enumerate(hist):
         cumul_hist_plot[i] = (0 if i == 0 else cumul_hist_plot[i-1]) + hist[i]
-
     return cumul_hist_plot
 
 
@@ -71,36 +57,21 @@ def show_histogram(hist, title=None):
 
 def histogram_equalization(image, hist):
 
+    M, N = image.shape
+
     # Normalized histogram (probability)
-    def p(i, image, hist):
-        return hist[i] / float(image.size[0] * image.size[1])
+    norm_hist = hist / float(M * N)
 
     # Generate the cumulative distribution function lookup table
-
     L = 256
-    cdfs = [0] * L
+    cdfs = np.zeros((L, 1))
+    sums = np.zeros((L, 1))
     for i in xrange(L):
-        for j in xrange(i+1):
-            cdfs[i] += p(j, image, hist)
-        cdfs[i] = round(cdfs[i] * (L-1))
-
+        sums[i] = (sums[i-1] if i > 0 else 0) + norm_hist[i]
+        cdfs[i] = round(sums[i] * (L-1))
 
     # Generate the new enhanced image
-
-    w, h = image.size
-    pixels = list(image.getdata())
-
-    new_image = Image.new("L", image.size)
-    new_pixels = new_image.load()
-
-    for x in xrange(w):
-        for y in xrange(h):
-            if image.mode == "L": # Grey scale image
-                new_pixels[x, y] = cdfs[pixels[y * w + x]]
-            elif image.mode == "RGB": # RGB image
-                new_pixels[x, y] = cdfs[pixels[y * w + x][0]]
-
-    return new_image
+    return np.vectorize(lambda x: cdfs[x])(image)
 
 
 # Main
@@ -117,27 +88,14 @@ if __name__ == "__main__":
     # Parse args
     args = parser.parse_args()
 
-    # Image path
+    # Load image
     image_path = args.image_path
-
-    # Check that the image exists
-    if not os.path.isfile(image_path):
-        print "Could not find image '{}'".format(image_path)
-        sys.exit(-1)
-
-    # Open image
-    image = Image.open(image_path)
-    if image == None:
-        print "Failed to open image '{}'".format(image_path)
-        sys.exit(-2)
-
-    # Make sure the image is a gray scale image
-    image = image.convert("L")
+    image = Img.load(image_path)
 
     # Compute the histogram of the image
     print "Computing histogram of '{}'...".format(image_path)
     hist = histogram(image)
-    image.show()
+    Img.show(image)
     show_histogram(hist, "Histogram of '{}'".format(image_path))
 
     # Perform the histogram equalization and generate the enhanced image
@@ -147,7 +105,7 @@ if __name__ == "__main__":
     # Compute the histogram of the new image
     print "Computing histogram of enhanced '{}'...".format(image_path)
     new_hist = histogram(new_image)
-    new_image.show()
+    Img.show(new_image)
     show_histogram(new_hist, "Histogram of enhanced '{}'".format(image_path))
 
     # Ensure that the matplotlib windows stay open
