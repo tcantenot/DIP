@@ -27,7 +27,7 @@ def inverse_filter(filter, d=0.01):
         filter: Filter to invert
         d:      Threshold to constrain the division
     """
-    return np.vectorize(lambda x: 1./x if np.abs(x) >= d else 1.0, otypes=[np.complex])(filter)
+    return np.vectorize(lambda x: 1./x if np.abs(x) >= d else 1.0/d, otypes=[np.complex])(filter)
 
 
 # Wiener filter
