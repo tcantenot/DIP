@@ -1,65 +1,39 @@
 #!/usr/bin/python
 
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse
+import numpy as np
 from matplotlib import pyplot
+
+from common import Img
 
 from noise import GaussianNoise, UniformNoise
 from meanfilter import ArithmeticMeanFilter, GeometricMeanFilter
 from meanfilter import HarmonicMeanFilter, ContraHarmonicMeanFilter
 from osfilter import MedianFilter, MaxFilter, MinFilter, MidpointFilter, AlphaTrimmedFilter
 
-
-# Create and return a new image of size (w, h) from the given linear array of pixels
-def new_image(pixels, w, h):
-    image = Image.new("L", [w, h])
-    data = image.load()
-    for x in xrange(w):
-        for y in xrange(h):
-            data[x, y] = pixels[y*w+x]
-    return image
-
-
-# Scale the pixels data to the range [0, 255]
-def scale_pixel_data(pixels, w, h):
-
-    min_value = min(pixels)
-    for x in xrange(w):
-        for y in xrange(h):
-            pixels[y*w+x] -= min_value
-
-    max_value = max(pixels)
-    for x in xrange(w):
-        for y in xrange(h):
-            pixels[y*w+x] = pixels[y*w+x] * (float(255) / max_value)
-
-    return pixels
+# Compute histogram
+def histogram(img):
+    histogram = np.array([0.0 for _ in xrange(256)], dtype=np.float)
+    for _, x in np.ndenumerate(img):
+        histogram[x] += 1
+    return histogram
 
 # Add noise to the given image using the given noise generator
-def apply_noise(image, noise_gen):
-    w, h = image.size
-    pixels = image.getdata()
-    data = [0 for i in xrange(w * h)]
-
-    for x in xrange(w):
-        for y in xrange(h):
-            data[y*w+x] = pixels[y*w+x] + noise_gen.sample(x, y)
-
-    scale_pixel_data(data, w, h)
-
-    return new_image(data, w, h)
+def apply_noise(image, noise):
+    return Img.scale(image + noise)
 
 # Apply the given restoration filter to the given image
 def apply_restoration_filter(image, filter):
-    w, h = image.size
-    pixels = image.getdata()
-    data = [0 for i in xrange(w * h)]
+    w, h = image.shape
+    data = np.empty(image.shape)
     for x in xrange(w):
         for y in xrange(h):
-            data[y*w+x] = filter.apply(x, y, w, h, pixels)
+            data[x, y] = filter.apply(x, y, image)
 
-    return new_image(data, w, h)
-
+    return Img.scale(data)
 
 # Main
 if __name__ == "__main__":
@@ -105,48 +79,35 @@ if __name__ == "__main__":
     # Parse args
     args = parser.parse_args()
 
-    # Image path
-    image_path = args.image_path
-
-    # Check that the image exists
-    if not os.path.isfile(image_path):
-        print "Could not find image '{}'".format(image_path)
-        sys.exit(-1)
-
-    # Open image
-    image = Image.open(image_path)
-    if image == None:
-        print "Failed to open image '{}'".format(image_path)
-        sys.exit(-2)
-
-    # Make sure the image is a gray scale image
-    image = image.convert('L')
-    image.show()
+    # Load image
+    image = Img.load(args.image_path)
 
     if args.histogram:
         fig, plot = pyplot.subplots()
         plot.set_xlim(0, 255)
         fig.suptitle("Histogram of orginal image")
-        pyplot.plot(image.histogram())
+        hist = histogram(image)
+        pyplot.plot(hist)
         pyplot.show()
 
 
     # Noise generators
 
-    noise_image = None
+    noisy_image = None
 
     if args.gaussian:
-        noise_image = apply_noise(image, GaussianNoise(0, 20))
+        noisy_image = apply_noise(image, GaussianNoise(0, 20, image.shape))
     elif args.uniform:
-        noise_image = apply_noise(image, UniformNoise(0, 128))
+        noisy_image = apply_noise(image, UniformNoise(0, 128, image.shape))
 
-    noise_image.show()
+    Img.show(noisy_image)
 
-    if args.histogram and noise_image:
+    if args.histogram and noisy_image is not None:
         fig, plot = pyplot.subplots()
         plot.set_xlim(0, 255)
         fig.suptitle("Histogram of original image with noise")
-        pyplot.plot(noise_image.histogram())
+        hist = histogram(noisy_image)
+        pyplot.plot(hist)
         pyplot.show()
 
 
@@ -155,47 +116,48 @@ if __name__ == "__main__":
     restored_image = None
 
     if args.arithmetic:
-        restored_image = apply_restoration_filter(noise_image, ArithmeticMeanFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, ArithmeticMeanFilter(3,3))
+        Img.show(restored_image)
 
     if args.geometric:
-        restored_image = apply_restoration_filter(noise_image, GeometricMeanFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, GeometricMeanFilter(3,3))
+        Img.show(restored_image)
 
     if args.harmonic:
-        restored_image = apply_restoration_filter(noise_image, HarmonicMeanFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, HarmonicMeanFilter(3,3))
+        Img.show(restored_image)
 
     if args.contraharmonic:
-        restored_image = apply_restoration_filter(noise_image, ContraHarmonicMeanFilter(3,3,args.q))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, ContraHarmonicMeanFilter(3,3,args.q))
+        Img.show(restored_image)
 
 
     # Order-statistic filters
 
     if args.median:
-        restored_image = apply_restoration_filter(noise_image, MedianFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, MedianFilter(3,3))
+        Img.show(restored_image)
 
     if args.max:
-        restored_image = apply_restoration_filter(noise_image, MaxFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, MaxFilter(3,3))
+        Img.show(restored_image)
 
     if args.min:
-        restored_image = apply_restoration_filter(noise_image, MinFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, MinFilter(3,3))
+        Img.show(restored_image)
 
     if args.midpoint:
-        restored_image = apply_restoration_filter(noise_image, MidpointFilter(3,3))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, MidpointFilter(3,3))
+        Img.show(restored_image)
 
     if args.alpha:
-        restored_image = apply_restoration_filter(noise_image, AlphaTrimmedFilter(3,3,args.d))
-        restored_image.show()
+        restored_image = apply_restoration_filter(noisy_image, AlphaTrimmedFilter(3,3,args.d))
+        Img.show(restored_image)
 
-    if args.histogram and restored_image:
+    if args.histogram and restored_image is not None:
         fig, plot = pyplot.subplots()
         plot.set_xlim(0, 255)
         fig.suptitle("Histogram of restored image")
-        pyplot.plot(restored_image.histogram())
+        hist = histogram(restored_image)
+        pyplot.plot(hist)
         pyplot.show()

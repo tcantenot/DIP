@@ -7,17 +7,17 @@ class MedianFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[y*w+x])
+            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[x, y])
 
         value = 0.
 
@@ -48,17 +48,17 @@ class MaxFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[y*w+x])
+            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[x, y])
 
         value = -float('inf')
 
@@ -79,17 +79,17 @@ class MinFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[y*w+x])
+            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[x, y])
 
         value = float('inf')
 
@@ -110,17 +110,17 @@ class MidpointFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[y*w+x])
+            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[x, y])
 
         m = float('inf')
         M = -float('inf')
@@ -147,17 +147,17 @@ class AlphaTrimmedFilter(object):
         assert 0 <= d < (width * height), \
             "d (= {}) must be in [0, width*height-1] = [0, {}]".format(d, width*height-1)
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[y*w+x])
+            return None if x<0 or x>(w-1) or y<0 or y>(h-1) else float(pixels[x, y])
 
         value = 0.
 

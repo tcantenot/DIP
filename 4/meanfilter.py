@@ -7,17 +7,17 @@ class ArithmeticMeanFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[y*w+x])
+            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[x, y])
 
         value = 0.
 
@@ -39,17 +39,17 @@ class GeometricMeanFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return float(1 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[y*w+x])
+            return float(1 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[x, y])
 
         value = 1.
 
@@ -74,17 +74,17 @@ class HarmonicMeanFilter(object):
         self.width  = width  # Witdh of the filter
         self.height = height # Height of the filter
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[y*w+x])
+            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[x, y])
 
         value = 0.
 
@@ -107,17 +107,17 @@ class ContraHarmonicMeanFilter(object):
         self.height = height # Height of the filter
         self.Q = Q           # Q > 0: Pepper; Q < 0: Salt
 
-    def apply(self, x, y, w, h, pixels):
+    def apply(self, x, y, pixels):
         """
             x: x coordinate of the current pixel
             y: y coordinate of the current pixel
-            w: width of the image
-            h: height of the image
-            pixels: linear array of the image's pixels of length w * h
+            pixels: 2D array of the image's pixels of shape (w, h)
         """
 
+        w, h = pixels.shape
+
         def get_pixel(x, y):
-            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[y*w+x])
+            return float(0 if x<0 or x>(w-1) or y<0 or y>(h-1) else pixels[x, y])
 
         a = 0.
         b = 0.
