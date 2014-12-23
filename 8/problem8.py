@@ -1,14 +1,17 @@
 #!/usr/bin/python
 
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse, os
 import numpy as np
 from scipy import ndimage
+
+from common import Img
 
 from erosion import erosion
 from dilation import dilation, dilation2D
 from morpho import opening, closing, boundary_extraction, holes_filling, connected_extraction
-from image import load, show, show_binary_img, save
 
 
 B = 1
@@ -54,16 +57,15 @@ filling_test = np.array([
 ])
 
 
-
 def morpho(op, img, structure, name, ref_op=None, debug=False):
 
-    print "{1}### {0} ###{1}".format(name, os.linesep)
+    print "### {} ###".format(name)
 
     res = op(img, structure)
 
     if debug:
         if ref_op is not None:
-            ref = 255 * ref_op(img, structure).astype('uint8')
+            ref = ref_op(img, structure).astype('uint8')
             print "Ref:{2}{0}{2}{2}Res:{2}{1}{2}".format(ref, res, os.linesep)
             print img
             assert np.array_equal(ref, res), "{} is different from Scipy's".format(name)
@@ -78,7 +80,7 @@ if __name__ == "__main__":
 
     # Available args
     parser = argparse.ArgumentParser(description=
-        'Filtering in the frequency domain'
+        'Morphological processing'
     )
 
     parser.add_argument('image_path', type=str, help='Image path')
@@ -103,12 +105,13 @@ if __name__ == "__main__":
 
     debug = args.debug
 
-    img = load(args.image_path)
+    # Load and binarize the image
+    img = Img.load(args.image_path)
+    img[img < 255]  = 0
+    img[img >= 255] = 1
     M, N = img.shape
 
     structure = np.full((3, 3), 1, dtype=int)
-
-    print structure
 
     if args.test:
         img = test
@@ -119,35 +122,31 @@ if __name__ == "__main__":
     if args.erosion:
         eroded = morpho(erosion, img, structure, "Erosion", ndimage.binary_erosion, debug=debug)
         ref = ndimage.binary_erosion(img, structure=structure)
-        if not debug: show_binary_img(eroded)
-        show_binary_img(np.abs(ref - eroded))
+        if not debug: Img.show_binary(eroded)
 
     # Dilation
     if args.dilation:
         dilated = morpho(dilation, img, structure, "Dilation", ndimage.binary_dilation, debug=debug)
         ref = ndimage.binary_dilation(img, structure=structure)
-        if not debug: show_binary_img(dilated)
-        show_binary_img(np.abs(ref - dilated))
+        if not debug: Img.show_binary(dilated)
 
     # Opening
     if args.opening:
         opened = morpho(opening, img, structure, "Opening", ndimage.binary_opening, debug=debug)
         ref = ndimage.binary_opening(img, structure=structure)
-        if not debug: show_binary_img(opened)
-        show_binary_img(np.abs(ref - opened))
+        if not debug: Img.show_binary(opened)
 
     # Closing
     if args.closing:
         closed = morpho(closing, img, structure, "Closing", ndimage.binary_closing, debug=debug)
         ref = ndimage.binary_closing(img, structure=structure)
-        if not debug: show_binary_img(closed)
-        show_binary_img(np.abs(ref - closed))
+        if not debug: Img.show_binary(closed)
 
     # Boundary extraction
     if args.boundary:
         if args.test: img = boundary_test
         boundary = morpho(boundary_extraction, img, structure, "Boundary extraction", debug=debug)
-        if not debug: show_binary_img(boundary)
+        if not debug: Img.show_binary(boundary)
 
     # Holes filling
     if args.filling:
@@ -159,15 +158,24 @@ if __name__ == "__main__":
         ])
         ref = ndimage.binary_fill_holes(img, structure=structure)
         filled = morpho(holes_filling, img, structure, "Holes filling", debug=debug)
-        show_binary_img(filled)
-        show_binary_img(np.abs(ref - filled))
+        Img.show_binary(filled)
 
     # Connected components extraction
     if args.connected:
+        img = Img.load(args.image_path)
+
+        # Thresholding
         threshold = 203
         img[img < threshold]  = 0
         img[img >= threshold] = 1
-        show_binary_img(img)
+        Img.show_binary(img)
+
+        # Erosion 5x5
+        structure = np.full((5, 5), 1, dtype=int)
+        img = erosion(img, structure)
+        Img.show_binary(img)
+
+        # Connected component extraction
         structure = np.full((3, 3), 1, dtype=int)
-        connected = morpho(connected_extraction, img, structure, "Connected components extraction", debug=debug)
-        show_binary_img(connected)
+        connected, _ = morpho(connected_extraction, img, structure, "Connected components extraction", debug=debug)
+        Img.show_binary(connected)

@@ -1,13 +1,10 @@
 import numpy as np
 
+from scipy import ndimage
+
 from erosion import erosion
 from dilation import dilation, dilation2D
-from utils import intersection, complementary
-
-# FIXME
-from image import show_binary_img
-from scipy import ndimage
-from utils import union
+from utils import complementary, intersection, union
 
 
 # Opening operator
@@ -41,7 +38,7 @@ def holes_filling(input, _):
 
     mask = complementary(input)
 
-    iter = 0
+    #iter = 0
     X0 = np.zeros(input.shape)
     while True:
         d1 = ndimage.binary_dilation(X0, struct_1, border_value=1, mask=mask)
@@ -51,7 +48,6 @@ def holes_filling(input, _):
         if np.array_equal(X0, X1): break
         X0 = X1
         #iter += 1
-        #if iter % 50 == 0: show_binary_img(X0)
 
     return complementary(X0)
 
@@ -59,12 +55,43 @@ def holes_filling(input, _):
 # Connected component extraction
 def connected_extraction(input, structure):
 
-    X0 = input
-    X1 = None
-    while True:
-        #X1 = intersection(dilation(X0, structure), input)
-        X1 = intersection(ndimage.binary_dilation(X0, structure), input)
-        if np.array_equal(X0, X1): break
-        X0 = X1
+    tmp = np.copy(input)
 
-    return X1
+    output = np.zeros(input.shape, input.dtype)
+
+    connections = []
+
+    iter = 0
+    while np.count_nonzero(tmp) > 0:
+
+        # Find the beginning of the next connected component
+        X0 = np.zeros(input.shape, input.dtype)
+        for (x, y), p in np.ndenumerate(tmp):
+            if p == 1:
+                X0[x, y] = 1
+                break
+
+        # Extract the connected component
+        X1 = None
+        while True:
+            #X1 = intersection(dilation(X0, structure), input)
+            X1 = intersection(ndimage.binary_dilation(X0, structure), input)
+            if np.array_equal(X0, X1): break
+            X0 = X1
+
+        # Remove connected component from the copy of the input image
+        tmp[X0 == 1] = 0
+
+        # Reconstruct input image
+        output[X0 == 1] = 1
+
+        # Count pixels of connected component
+        connections.append(np.count_nonzero(X0))
+
+        print "Connected component {}: {} pixel{}".format(
+            iter, connections[-1], 's' if connections[-1] > 1 else ''
+        )
+
+        iter += 1
+
+    return output, connections
