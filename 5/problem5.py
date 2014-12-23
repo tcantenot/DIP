@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
-import argparse, os, sys
-from math import exp, pow, sqrt
-import math
-import cmath
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse
 import numpy as np
+
+from common import Img
 
 
 # Gaussian noise
@@ -43,8 +44,8 @@ def wiener_filter(S, H, N=None):
 
     if 0:
         fft = np.fft.fft2(preprocess(H))
-        show(fft)
-        show(np.abs(fft) ** 2)
+        Img.show(fft)
+        Img.show(np.abs(fft) ** 2)
 
     #Snn = N ** 2 if N is not None else None
     Snn = np.abs(np.fft.fft2(N)) ** 2 if N is not None else None
@@ -87,26 +88,12 @@ def preprocess(data):
 def postprocess(data):
     return preprocess(data)
 
-
-# Scale the data between 0 and 255
-def scale_data(data):
-    min_value = np.min(data)
-    scaled_data = data - min_value
-    max_value = np.max(scaled_data)
-    scaled_data = scaled_data * (255./max_value)
-    return scaled_data
-
-
-# Show an image
-def show(img_data):
-    Image.fromarray(img_data).show()
-
-
+# Display a Fourier image
 def show_fourier(fft_data):
     fft_img = fft_data.ravel()
     fft_img[0] = 0
     fft_img.reshape(fft_data.shape)
-    show(fft_img)
+    Img.show(fft_img)
 
 
 def apply_filter(img, filter, center=True, scale=True, imshow_f=False):
@@ -132,7 +119,7 @@ def apply_filter(img, filter, center=True, scale=True, imshow_f=False):
     if center: real_img = postprocess(real_img)
 
     # Scale the pixels values
-    if scale: real_img = scale_data(real_img)
+    if scale: real_img = Img.scale(real_img)
 
     return real_img
 
@@ -193,12 +180,8 @@ if __name__ == "__main__":
     sigma = args.s  # Sigma (variance) of the Gaussian noise
 
 
-    image = Image.open(args.image_path).convert('L')
-    #image.show()
-
-    # Image's pixels
-    data = np.array(image.getdata()).reshape(image.size)
-    shape = data.shape
+    image = Img.load(args.image_path)
+    shape = image.shape
 
     # Blurring filter
     bf = blurring_filter(a, b, T, shape)
@@ -207,14 +190,14 @@ if __name__ == "__main__":
 
     # Blur the image...
     if not args.blurred:
-        blurred_image = apply_filter(data, bf)
-        show(blurred_image)
+        blurred_image = apply_filter(image, bf)
+        Img.show(blurred_image)
 
    # ... or load a precomputed blurred image
     else:
         blurred_image = Image.open(args.blurred).convert('L')
-        blurred_image = np.array(blurred_image.getdata()).reshape(blurred_image.size)
-        show(blurred_image)
+        blurred_image = np.array(blurred_image.getimage()).reshape(blurred_image.size)
+        Img.show(blurred_image)
 
 
     # Add Gaussian noise
@@ -223,8 +206,8 @@ if __name__ == "__main__":
     if args.noise:
         noise = gaussian_noise(0, sigma, shape)
         blurred_image_w_noise = blurred_image + noise
-        blurred_image_w_noise = scale_data(blurred_image_w_noise)
-        show(blurred_image_w_noise)
+        blurred_image_w_noise = Img.scale(blurred_image_w_noise)
+        Img.show(blurred_image_w_noise)
 
 
     # Inverse filter
@@ -236,27 +219,27 @@ if __name__ == "__main__":
         # Apply the inverse blurring filter on the blurred image
         if not args.noise:
             restored_image = apply_filter(blurred_image, ibf)
-            show(restored_image)
+            Img.show(restored_image)
 
         # Apply the inverse blurring filter on the blurred and noisy image
         else:
             restored_image = apply_filter(blurred_image_w_noise, ibf)
-            show(restored_image)
+            Img.show(restored_image)
 
 
     # Wiener deconvolution filter
     if args.wiener:
 
         # Wiener filter
-        wf = wiener_filter(data, bf, noise)
+        wf = wiener_filter(image, bf, noise)
 
         # Apply the Wiener deconvolution filter on the blurred image
         if not args.noise:
             restored_image = apply_filter(blurred_image, wf)
-            show(restored_image)
+            Img.show(restored_image)
 
         # Apply the Wiener deconvolution filter on the blurred and noisy image
         else:
             restored_image = apply_filter(blurred_image_w_noise, wf)
-            show(restored_image)
+            Img.show(restored_image)
 
