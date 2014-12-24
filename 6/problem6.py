@@ -1,30 +1,10 @@
+import sys
+sys.path.append('..')
+
 import argparse
-from PIL import Image
 import numpy as np
 
-# Scale the data between 0 and 255
-def scale_data(data, zero=True, eps=np.finfo(np.float32).eps):
-    min_value = np.min(data)
-    scaled_data = data - min_value
-    if zero: scaled_data[scaled_data <= eps] = 0.0
-    max_value = np.max(scaled_data)
-    if max_value != 0.0: scaled_data = scaled_data * (255./max_value)
-    return scaled_data
-
-# Load an grey-scale image
-def load(path):
-    return np.array(Image.open(path).convert('L'), np.uint8)
-
-# Show an image
-def show(img, scale=True, astype=None):
-    image = img
-    if scale: image = scale_data(img)
-    if astype is not None: image = image.astype(astype)
-    Image.fromarray(image).show()
-
-# Save an image to disk
-def save(path, img):
-    Image.fromarray(scale_data(img).astype(np.uint8)).save(path)
+from common import Img
 
 
 class Transform(object):
@@ -33,23 +13,34 @@ class Transform(object):
         self.interpolator = interpolator
 
     # Translation
-    def translate(self, src, ox, oy):
+    def translate(self, src, ox, oy, truncate=False):
         """
         Translate the source image by the given amount.
         src:    Source Image.
         ox, oy: Translation along X and Y axis.
         """
 
+        ox, oy = -ox, -oy
+
         sw, sh = src.shape
         dw, dh = int(sw+ox), int(oy+sh)
 
         # Generate a grid of pixel coordinates
-        dx, dy = np.mgrid[0:dw, 0:dh]
+        w1, w2 = int(min(0, ox)), int(sw + ox)
+        h1, h2 = int(min(0, oy)), int(sh + oy)
+        dx, dy = np.mgrid[w1:w2, h1:h2]
 
         sx, sy = dx, dy
 
         # Interpolate the pixels coordinates
-        return self.interpolator.interpolate(src, sx, sy, dx, dy)
+        dest = self.interpolator.interpolate(src, sx, sy, dx, dy)
+
+        if truncate:
+            ox, oy = [s/2. for s in dest.shape]
+            dest = dest[ox - sw/2.: ox + sw/2., oy - sh/2.: oy + sh/2.]
+
+        return dest
+
 
     # Rotation
     def rotate(self, src, theta, truncate=False):
@@ -89,7 +80,7 @@ class Transform(object):
         return dest
 
     # Scaling
-    def scale(self, src, s):
+    def scale(self, src, s, truncate=False):
         sw, sh = src.shape
         dw, dh = np.int(sw * s), np.int(sh * s)
 
@@ -103,7 +94,17 @@ class Transform(object):
         sy = dy * y_ratio
 
         # Interpolate the pixels coordinates
-        return self.interpolator.interpolate(src, sx, sy, dx, dy)
+        dest = self.interpolator.interpolate(src, sx, sy, dx, dy)
+
+        if s > 1.:
+            if truncate:
+                ox, oy = [s/2. for s in dest.shape]
+                dest = dest[ox - sw/2.: ox + sw/2., oy - sh/2.: oy + sh/2.]
+        else:
+            ox, oy = [(l - r) / 2. for (l, r) in zip(src.shape, dest.shape)]
+            dest = np.lib.pad(dest, (ox, oy), 'constant', constant_values=0)
+
+        return dest
 
     # Rotate the x and y coordinates arrays around a point
     def _rotate(self, x, y, theta, ox, oy):
@@ -135,7 +136,7 @@ class NearestNeighbor(object):
         # Mask for valid pixel coordinates
         mask = (sx >= 0) & (sx < sw) & (sy >= 0) & (sy < sh)
 
-        dest = np.empty((np.max(dx)+1, np.max(dy)+1), dtype=src.dtype)
+        dest = np.empty(dx.shape, dtype=src.dtype)
         # Copy valid coordinates from source image.
         dest[dx[mask], dy[mask]] = src[sx[mask], sy[mask]]
 
@@ -208,9 +209,9 @@ if __name__ == "__main__":
         help='Use bilinear interpolation'
     )
 
-    # Truncate the rotated image
-    parser.add_argument('--truncate', action='store_true',
-        help='Truncate the result of the rotation'
+    # Prevent truncating the transform image (allow different size)
+    parser.add_argument('--ntruncate', action='store_true',
+        help='Do not truncate the result of the transformation'
     )
 
     # Enable debug message
@@ -222,29 +223,39 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Input image
-    img = load(args.input)
+    img = Img.load(args.input)
+
+    folder = 'output'
 
     # Choose interpolator
     interpolator = None
+    interpolator_str = None
     if args.nearest:
         interpolator = NearestNeighbor()
+        interpolator_str = 'nn'
     elif args.bilinear:
         interpolator = Bilinear()
+        interpolator_str = 'bl'
 
     transform = Transform(interpolator)
 
     # Perform transformation
     if args.translate is not None:
-        dx, dy = args.translate[0], args.translate[1]
-        translated = transform.translate(img, dx, dy)
-        show(translated)
+        dy, dx = args.translate[0], args.translate[1]
+        translated = transform.translate(img, dx, dy, not args.ntruncate)
+        Img.show(translated)
+        Img.save("{}/translate_{}_{}_{}.png".format(folder, dy, dx, interpolator_str),
+            translated, dtype=np.uint8
+        )
 
     elif args.rotate is not None:
         theta = args.rotate
-        rotated = transform.rotate(img, theta, args.truncate)
-        show(rotated)
+        rotated = transform.rotate(img, theta, not args.ntruncate)
+        Img.show(rotated)
+        Img.save("{}/rotate_{}_{}.png".format(folder, theta, interpolator_str), rotated, dtype=np.uint8)
 
     elif args.scale is not None:
         s = args.scale
-        scaled = transform.scale(img, s)
-        show(scaled)
+        scaled = transform.scale(img, s, not args.ntruncate)
+        Img.show(scaled)
+        Img.save("{}/scale_{}_{}.png".format(folder, s, interpolator_str), scaled, dtype=np.uint8)
