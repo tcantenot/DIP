@@ -23,7 +23,7 @@ class Transform(object):
         ox, oy = -ox, -oy
 
         sw, sh = src.shape
-        dw, dh = int(sw+ox), int(oy+sh)
+        dw, dh = int(sw+ox), int(sh+oy)
 
         # Generate a grid of pixel coordinates
         w1, w2 = int(min(0, ox)), int(sw + ox)
@@ -239,14 +239,33 @@ if __name__ == "__main__":
 
     transform = Transform(interpolator)
 
+    def _translate(src, ox, oy):
+        f = lambda n: np.floor(n).astype(np.int)
+        M, N = src.shape
+        output = np.zeros(src.shape)
+        ox, oy = -ox, -oy
+        for (x, y), p in np.ndenumerate(src):
+            xx, yy = x+ox, y+oy
+            if xx >= 0 and xx < M and yy >= 0 and yy < N:
+                output[x, y] = src[f(xx), f(yy)]
+        return output
+
     # Perform transformation
     if args.translate is not None:
-        dy, dx = args.translate[0], args.translate[1]
-        translated = transform.translate(img, dx, dy, not args.ntruncate)
-        Img.show(translated)
-        Img.save("{}/translate_{}_{}_{}.png".format(folder, dy, dx, interpolator_str),
-            translated, dtype=np.uint8
-        )
+        if not args.nearest:
+            dy, dx = args.translate[0], args.translate[1]
+            translated = transform.translate(img, dx, dy, not args.ntruncate)
+            Img.show(translated)
+            Img.save("{}/translate_{}_{}_{}.png".format(folder, dy, dx, interpolator_str),
+                translated, dtype=np.uint8
+            )
+        else:
+            dy, dx = args.translate[0], args.translate[1]
+            translated = _translate(img, dx, dy)
+            Img.show(translated)
+            Img.save("{}/translate_{}_{}_{}.png".format(folder, dy, dx, interpolator_str),
+                translated, dtype=np.uint8
+            )
 
     elif args.rotate is not None:
         theta = args.rotate

@@ -128,5 +128,4 @@ if __name__ == "__main__":
         Img.save("{}/pc_eigen{}_band{}.png".format(results_dir, n, i+1), img, dtype=np.uint8)
 
     for i, img in enumerate(pc_diffs):
-        img = Img.scale(img, zero=True, eps=np.finfo(np.float32).eps)
         Img.save("{}/pc_eigen{}_band{}_diff.png".format(results_dir, n, i+1), img, dtype=np.uint8)
