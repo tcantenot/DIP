@@ -1,10 +1,10 @@
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse
 import numpy as np
 
-# Show an image
-def show(img_data):
-    Image.fromarray(img_data).show()
+from common import Img
 
 # Find the nearest point on a grid
 def nearest_grid_point(p, grid_spacing, grid_min=[0, 0]):
@@ -52,6 +52,7 @@ def resample_image(image, grid_spacing):
     grid_spacing: [sx, sy] grid spacing in x and y direction.
     """
 
+    grid_spacing = grid_spacing[::-1]
     resampled = np.zeros(image.shape)
     for (x, y), d in np.ndenumerate(image):
         if d != 255: continue
@@ -67,6 +68,7 @@ def resample_boundary(boundary, grid_spacing):
     grid_spacing: [sx, sy] grid spacing in x and y direction.
     """
     output = []
+    grid_spacing = grid_spacing[::-1]
     resampled = (nearest_grid_point(b, grid_spacing) for b in boundary)
     unique = set()
     for p in resampled:
@@ -77,24 +79,23 @@ def resample_boundary(boundary, grid_spacing):
             output.append([x, y])
 
     return np.array(output, np.int)
-    #return np.array(list(set(tuple(p) for p in
 
 def show_resampled_boundary(boundary, shape):
     image = np.zeros(shape)
     for (x, y) in boundary: image[x, y] = 255
-    show(image)
+    Img.show(image)
 
 
 # Main
 if __name__ == "__main__":
 
     # Available args
-    parser = argparse.ArgumentParser(description='Resampling grid')
+    parser = argparse.ArgumentParser(description='Image representation and description - Resampling grid')
 
     parser.add_argument('boundary_image', type=str, help='Black and white boundary image')
 
     parser.add_argument('-s', '--sampling', dest='sampling', nargs = '+',
-        type=int, default=[10, 10],
+        type=int, default=[30, 30],
         help='Sampling spacing in x and y direction'
     )
 
@@ -102,9 +103,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Input boundary image
-    image = np.array(Image.open(args.boundary_image).convert('L'), np.uint8)
-    show(image)
+    image = Img.load(args.boundary_image)
+    Img.show(image)
 
     # Resample grid
     resampled = resample_image(image, args.sampling)
-    show(resampled)
+    Img.show(resampled)

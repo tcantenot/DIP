@@ -1,23 +1,10 @@
+import sys
+sys.path.append('..')
+
 import argparse
-from PIL import Image
 import numpy as np
 
-# Scale the data between 0 and 255
-def scale_data(data, zero=True, eps=np.finfo(np.float32).eps):
-    min_value = np.min(data)
-    scaled_data = data - min_value
-    if zero: scaled_data[scaled_data <= eps] = 0.0
-    max_value = np.max(scaled_data)
-    if max_value != 0.0: scaled_data = scaled_data * (255./max_value)
-    return scaled_data
-
-# Show an image
-def show(img):
-    Image.fromarray(scale_data(img)).show()
-
-# Save an image to disk
-def save(path, img):
-    Image.fromarray(scale_data(img).astype(np.uint8)).save(path)
+from common import Img
 
 # Principal components
 def principal_components(images, n=None, debug=False, showr=False, showdiff=False):
@@ -25,8 +12,8 @@ def principal_components(images, n=None, debug=False, showr=False, showdiff=Fals
     images:    Array of image components.
     n:         Number of eigen values/vector to keep (None means keep them all).
     debug:     Enable/Disable debug messages.
-    showr:     Show reconstructed images.
-    showdiff:  Show difference between original and reconstructed images.
+    showr:     Img.show reconstructed images.
+    showdiff:  Img.show difference between original and reconstructed images.
     """
 
     np.set_printoptions(linewidth=150)
@@ -84,8 +71,8 @@ def principal_components(images, n=None, debug=False, showr=False, showdiff=Fals
 
     # Display results
     for i, (image, diff) in enumerate(zip(reconstructed, diffs)):
-        if showr:    show(image)
-        if showdiff: show(diff)
+        if showr:    Img.show(Img.scale(image))
+        if showdiff: Img.show(Img.scale(diff))
 
     return reconstructed, diffs
 
@@ -96,21 +83,22 @@ if __name__ == "__main__":
     # Available args
     parser = argparse.ArgumentParser(description='Image description by Principal Components (PC)')
 
-    parser.add_argument('-n', type=int, default=None,
-        help='Number of eigen vectors to remove'
+    parser.add_argument('-n', type=int, default=6,
+        help='Number of eigen vectors to keep'
     )
 
     parser.add_argument('--debug', action='store_true',
         help='Enable debug messages'
     )
 
-    parser.add_argument('--show', action='store_true',
-        help='Display reconstructed images'
-    )
-
     parser.add_argument('--diff', action='store_true',
         help='Display the difference between original and reconstructed images'
     )
+
+    parser.add_argument('--nshow', action='store_true',
+        help='Don\'t display the reconstructed images'
+    )
+
 
     # Parse args
     args = parser.parse_args()
@@ -124,16 +112,21 @@ if __name__ == "__main__":
         'WashingtonDC_Band6.tif'
     ]
 
-    images = np.array([np.array(Image.open(p).convert('L'), np.uint8) for p in image_paths])
+    images = np.array([Img.load(p) for p in image_paths])
+
+    n = np.clip(args.n, 0, 6)
 
     # Principal components
-    pc_images, pc_diffs = principal_components(images, args.n, debug=args.debug, showr=args.show, showdiff=args.diff)
+    pc_images, pc_diffs = principal_components(images, n,
+        debug=args.debug, showr=not args.nshow, showdiff=args.diff
+    )
 
-    # Save results to disk
+    # Img.save results to disk
     results_dir = 'images/pc'
-    n = args.n if args.n is not None else len(image_paths)
     for i, img in enumerate(pc_images):
-        save("{}/pc_eigen{}_band{}.tif".format(results_dir, n, i+1), img)
+        img = Img.scale(img, zero=True, eps=np.finfo(np.float32).eps)
+        Img.save("{}/pc_eigen{}_band{}.png".format(results_dir, n, i+1), img, dtype=np.uint8)
 
     for i, img in enumerate(pc_diffs):
-        save("{}/pc_eigen{}_band{}_diff.tif".format(results_dir, n, i+1), img)
+        img = Img.scale(img, zero=True, eps=np.finfo(np.float32).eps)
+        Img.save("{}/pc_eigen{}_band{}_diff.png".format(results_dir, n, i+1), img, dtype=np.uint8)

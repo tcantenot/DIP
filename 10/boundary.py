@@ -1,8 +1,13 @@
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse
 import numpy as np
 from scipy import signal, misc
 from scipy.ndimage.filters import gaussian_filter
+
+from common import Img
+
 
 class Point(object):
 
@@ -121,10 +126,6 @@ def boundary_following(img):
     return np.array(boundaries)
 
 
-# Show an image
-def show(img_data):
-    Image.fromarray(img_data).show()
-
 # Gaussian smoothing
 def smooth_gauss(img, sigma):
     return gaussian_filter(img, np.sqrt(sigma))
@@ -153,30 +154,32 @@ test1 = np.array([
 if __name__ == "__main__":
 
     # Available args
-    parser = argparse.ArgumentParser(description='Image representation and description')
+    parser = argparse.ArgumentParser(description='Image representation and description - Boundary following')
+
+    parser.add_argument('--smooth', action='store_true', help='Smooth image to remove noise')
 
     parser.add_argument('image_path', type=str, help='Image path')
 
     # Parse args
     args = parser.parse_args()
 
-    image = Image.open(args.image_path).convert('L')
-    data = np.array(image, np.uint8)
+    image = Img.load(args.image_path)
 
-    data = smooth_gauss(data, 10)
+    # Smooth image
+    if args.smooth:
+        image = smooth_gauss(image, 10)
 
-    data[data < 128] = 0
-    data[data >= 128] = 255
-    show(data)
+    # Binarize image
+    image[image < 128] = 0
+    image[image >= 128] = 255
 
-    #data = test * 255
-    #data = test1 * 255
+    Img.show(image)
 
-    boundaries = boundary_following(data)
+    boundaries = boundary_following(image)
 
-    result = np.zeros(data.shape)
+    result = np.zeros(image.shape)
     for boundary in boundaries:
         for b in boundary:
             x, y = b
             result[x, y] = 255
-    show(result)
+    Img.show(result)

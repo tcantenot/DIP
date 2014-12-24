@@ -1,14 +1,14 @@
-import argparse, os, sys
-from PIL import Image
+import sys
+sys.path.append('..')
+
+import argparse
 import numpy as np
+
+from common import Img
 
 from boundary import boundary_following
 from resampling import resample_boundary, show_resampled_boundary
 
-
-# Show an image
-def show(img_data):
-    Image.fromarray(img_data).show()
 
 # Compute the 8-chaincode of the given boundary
 def chaincode_8(boundary):
@@ -54,12 +54,12 @@ def first_difference_8(chaincode):
 if __name__ == "__main__":
 
     # Available args
-    parser = argparse.ArgumentParser(description='Resample grid and compute 8-chaincode')
+    parser = argparse.ArgumentParser(description='Image representation and description - Resampling grid and chaincode')
 
     parser.add_argument('boundary_image', type=str, help='Black and white boundary image')
 
     parser.add_argument('-s', '--sampling', dest='sampling', nargs = '+',
-        type=int, default=[10, 10],
+        type=int, default=[30, 30],
         help='Sampling spacing in x and y direction'
     )
 
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Input boundary image
-    image = np.array(Image.open(args.boundary_image).convert('L'), np.uint8)
-    show(image)
+    image = Img.load(args.boundary_image)
+    Img.show(image)
 
     # Compute boundary
     boundaries = boundary_following(image)
