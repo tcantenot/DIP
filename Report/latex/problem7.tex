@@ -26,19 +26,21 @@
 \bigskip
 Two programs: \\
 \begin{itemize}
+
     \item DCT compression: \textbf{dct.py}
+    Usage:~\textbf{dct.py [-h] [--zonal | --threshold] [-z Z] image\_path} \\
+    Use \textbf{python dct.py -h} to see the help.
+
+    \bigskip
+
     \item Wavelet compression: \textbf{wavelet.py}
+    Usage:~\textbf{wavelets.py [-h] [--haar | --daub | --symlet | --cohen] [-l LEVEL]}\\
+                   \textbf{[-t THRESHOLD] image\_path}
+    Use \textbf{python wavelets.py -h} to see the help.
+
 \end{itemize}
 
-\textbf{DCT}: \\
-Usage:~\textbf{dct.py [-h] [--zonal | --threshold] [-z Z] image\_path} \\
-Use \textbf{python dct.py -h} to see the help.
-
 \bigskip
-
-TODO: Wavelet
-\textbf{Wavelet}: \\
-Use \textbf{python wavelet.py -h} to see the help.
 
 \pagebreak
 
@@ -133,3 +135,92 @@ Example: Zonal 2
 
 \pagebreak
 
+\section{Image compression based on Wavelets}
+
+Decompose the image by wavelets, truncate some coefficients to 0 below a threshold (0 in this case) and reconstructed the image.\\
+\textbf{python wavelets.py --haar lenna.tif -l 1 -t 0}.
+
+\pagebreak
+\subsection{Haar}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.8\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/haar.jpg}}
+        \caption{\small{Haar}}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/haar_reconstructed.jpg}}
+        \caption{\small{Haar reconstructed}}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/haar_diff.jpg}}
+        \caption{\small{Haar difference}}
+    \end{minipage}
+\end{figure}
+
+\pagebreak
+\subsection{Daubechies}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.8\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/daub.jpg}}
+        \caption{\small{Daubechies}}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/daub_reconstructed.jpg}}
+        \caption{\small{Daubechies reconstructed}}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/daub_diff.jpg}}
+        \caption{\small{Daubechies difference}}
+    \end{minipage}
+\end{figure}
+
+\pagebreak
+\subsection{Symlet}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.8\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/symlet.jpg}}
+        \caption{\small{Symlet}}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/symlet_reconstructed.jpg}}
+        \caption{\small{Symlet reconstructed}}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/symlet_diff.jpg}}
+        \caption{\small{Symlet difference}}
+    \end{minipage}
+\end{figure}
+
+
+\pagebreak
+\subsection{Cohen-Daubechies-Feauveau}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.8\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/cohen.jpg}}
+        \caption{\small{Cohen}}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[!htb]\centering
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/cohen_reconstructed.jpg}}
+        \caption{\small{Cohen reconstructed}}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \frame{\includegraphics[width=\linewidth]{./images/7/cohen_diff.jpg}}
+        \caption{\small{Cohen difference}}
+    \end{minipage}
+\end{figure}

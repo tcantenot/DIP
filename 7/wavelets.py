@@ -1,9 +1,10 @@
-import numpy as np
-
-from scipy import misc
-
 import sys
 sys.path.append('..')
+
+import argparse
+import numpy as np
+from scipy import misc
+
 from common import Img
 
 # Wavelets
@@ -84,18 +85,42 @@ def cohen_kernel(shape):
 
 if __name__ == '__main__':
 
-    img = Img.load('lichtenstein.png', np.float)
-    level = 1
+    # Available args
+    parser = argparse.ArgumentParser(description='Transform image compression')
 
-    kernel = haar_kernel(img.shape)
-    #kernel = daubechies_kernel(img.shape)
-    #kernel = symlet_kernel(img.shape)
-    #kernel = cohen_kernel(img.shape)
+    parser.add_argument('image_path', type=str, help='Image path')
+
+    wavelets = parser.add_mutually_exclusive_group()
+    wavelets.add_argument('--haar', action='store_true', help='Use Haar wavelets')
+    wavelets.add_argument('--daub', action='store_true', help='Use Daubechies wavelets')
+    wavelets.add_argument('--symlet', action='store_true', help='Use Symlet wavelets')
+    wavelets.add_argument('--cohen', action='store_true', help='Use Cohen wavelets')
+
+    parser.add_argument('-l', dest='level', type=int, default=1, help='Number of Wavelet levels')
+
+    parser.add_argument('-t', dest='threshold', type=float, default=0, help='Threshold use to truncate')
+
+
+    # Parse args
+    args = parser.parse_args()
+
+    img = Img.load(args.image_path, np.float)
+    level = args.level
+
+    kernel = None
+    if args.haar:
+        kernel = haar_kernel(img.shape)
+    elif args.daub:
+        kernel = daubechies_kernel(img.shape)
+    elif args.symlet:
+        kernel = symlet_kernel(img.shape)
+    elif args.cohen:
+        kernel = cohen_kernel(img.shape)
 
     encoded = encode_wavelet(img, kernel, level)
     Img.show(encoded)
 
-    threshold = 0.
+    threshold = args.threshold
     encoded[encoded < threshold] = 0.
 
     decoded = decode_wavelet(encoded, kernel, level)
